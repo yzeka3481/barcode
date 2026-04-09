@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Seri No Okuyucu</title>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <style>
+    :root{
+      --bg:#f4f7fb;
+      --card:#ffffff;
+      --text:#1f2937;
+      --muted:#6b7280;
+      --line:#dbe3ee;
+      --accent:#0f766e;
+      --accent2:#0ea5e9;
+      --danger:#dc2626;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
+    .wrap{
+      max-width:980px;
+      margin:0 auto;
+      padding:16px;
+    }
+    .title{
+      font-size:24px;
+      font-weight:700;
+      margin:4px 0 8px;
+    }
+    .sub{
+      color:var(--muted);
+      margin-bottom:16px;
+      line-height:1.4;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns:1.2fr .8fr;
+      gap:16px;
+    }
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:14px;
+      box-shadow:0 10px 24px rgba(15,23,42,.05);
+    }
+    video, canvas, img{
+      width:100%;
+      border-radius:12px;
+      background:#111827;
+    }
+    .controls{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:12px;
+    }
+    button{
+      border:none;
+      border-radius:12px;
+      padding:12px 14px;
+      font-size:15px;
+      font-weight:600;
+      cursor:pointer;
+    }
+    .primary{background:var(--accent); color:#fff;}
+    .secondary{background:#e6f4f1; color:var(--accent);}
+    .info{background:#e8f5fd; color:#0369a1;}
+    .danger{background:#fee2e2; color:var(--danger);}
+    .ghost{background:#f3f4f6; color:#111827;}
+    input, textarea, select{
+      width:100%;
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:12px;
+      font-size:15px;
+      margin-top:8px;
+      background:#fff;
+    }
+    label{
+      display:block;
+      font-size:14px;
+      color:#374151;
+      margin-top:12px;
+      font-weight:600;
+    }
+    .status{
+      margin-top:10px;
+      padding:10px 12px;
+      border-radius:12px;
+      background:#f8fafc;
+      border:1px solid var(--line);
+      color:#334155;
+      min-height:44px;
+      line-height:1.4;
+    }
+    .result{
+      font-size:18px;
+      font-weight:700;
+      margin-top:10px;
+      padding:12px;
+      border-radius:12px;
+      background:#f0fdf4;
+      border:1px solid #bbf7d0;
+      word-break:break-word;
+    }
+    .small{
+      font-size:13px;
+      color:var(--muted);
+      line-height:1.4;
+    }
+    table{
+      width:100%;
+      border-collapse:collapse;
+      margin-top:12px;
+      font-size:14px;
+    }
+    th, td{
+      border-bottom:1px solid var(--line);
+      padding:10px 8px;
+      text-align:left;
+      vertical-align:top;
+    }
+    th{background:#f8fafc}
+    .row-actions{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .preview-box{
+      margin-top:12px;
+    }
+    .pill{
+      display:inline-block;
+      font-size:12px;
+      font-weight:700;
+      padding:6px 8px;
+      border-radius:999px;
+      background:#eef2ff;
+      color:#4338ca;
+      margin-bottom:8px;
+    }
+    @media (max-width: 860px){
+      .grid{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="title">Seri Numarası Okuyucu</div>
+    <div class="sub">
+      Telefon kamerasını açar, görüntüden seri numarasını OCR ile okumaya çalışır ve listeye kaydeder.
+      İnternet gerekir çünkü OCR kütüphanesi CDN üzerinden yüklenir.
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="pill">1. Kamera ve okuma</div>
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="canvas" style="display:none;"></canvas>
+
+        <div class="controls">
+          <button class="primary" id="startBtn">Kamerayı Aç</button>
+          <button class="secondary" id="captureBtn">Fotoğraf Çek</button>
+          <button class="info" id="scanBtn">Seri No Oku</button>
+          <button class="danger" id="stopBtn">Kamerayı Kapat</button>
+        </div>
+
+        <label for="regexInput">Seri numarası filtresi (Regex)</label>
+        <input id="regexInput" value="[A-Z0-9\\-]{6,}" />
+        <div class="small">
+          Örnek: <b>[A-Z0-9\\-]{6,}</b> → en az 6 karakterli büyük harf/rakam/tire dizilerini yakalar.
+        </div>
+
+        <label for="manualInput">Bulunan seri numarası / manuel düzeltme</label>
+        <input id="manualInput" placeholder="Örn: SN-12345678" />
+
+        <label for="noteInput">Not</label>
+        <input id="noteInput" placeholder="İsteğe bağlı açıklama" />
+
+        <div class="result" id="resultBox">Henüz okunmadı.</div>
+        <div class="status" id="statusBox">Hazır.</div>
+
+        <div class="preview-box">
+          <label>Çekilen görüntü</label>
+          <img id="preview" alt="Önizleme" />
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="pill">2. Kayıt listesi</div>
+
+        <div class="controls" style="margin-top:0;">
+          <button class="primary" id="saveBtn">Listeye Kaydet</button>
+          <button class="ghost" id="exportBtn">CSV Dışa Aktar</button>
+          <button class="danger" id="clearBtn">Tümünü Sil</button>
+        </div>
+
+        <table id="recordsTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Seri No</th>
+              <th>Not</th>
+              <th>Tarih</th>
+              <th>İşlem</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+
+        <div class="small" style="margin-top:10px;">
+          Kayıtlar tarayıcıda saklanır. Sayfa kapanıp açılsa da kalır.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const preview = document.getElementById('preview');
+    const resultBox = document.getElementById('resultBox');
+    const statusBox = document.getElementById('statusBox');
+    const manualInput = document.getElementById('manualInput');
+    const noteInput = document.getElementById('noteInput');
+    const regexInput = document.getElementById('regexInput');
+    const recordsTableBody = document.querySelector('#recordsTable tbody');
+
+    let stream = null;
+    let capturedImageDataUrl = '';
+    let records = JSON.parse(localStorage.getItem('serial_records') || '[]');
+
+    function setStatus(msg) {
+      statusBox.textContent = msg;
+    }
+
+    function setResult(msg) {
+      resultBox.textContent = msg;
+    }
+
+    async function startCamera() {
+      try {
+        setStatus('Kamera açılıyor...');
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: { ideal: 'environment' },
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
+          },
+          audio: false
+        });
+        video.srcObject = stream;
+        setStatus('Kamera açık.');
+      } catch (err) {
+        setStatus('Kamera açılamadı: ' + err.message);
+      }
+    }
+
+    function stopCamera() {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+        video.srcObject = null;
+        setStatus('Kamera kapatıldı.');
+      }
+    }
+
+    function captureFrame() {
+      if (!video.srcObject) {
+        setStatus('Önce kamerayı aç.');
+        return;
+      }
+      const vw = video.videoWidth;
+      const vh = video.videoHeight;
+      if (!vw || !vh) {
+        setStatus('Video hazır değil. 1-2 saniye sonra tekrar dene.');
+        return;
+      }
+
+      canvas.width = vw;
+      canvas.height = vh;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, vw, vh);
+
+      capturedImageDataUrl = canvas.toDataURL('image/jpeg', 0.95);
+      preview.src = capturedImageDataUrl;
+      setStatus('Fotoğraf çekildi.');
+    }
+
+    function extractSerialNumber(rawText) {
+      const cleaned = rawText
+        .replace(/\r/g, '\n')
+        .split('\n')
+        .map(x => x.trim())
+        .filter(Boolean)
+        .join(' ');
+
+      try {
+        const regex = new RegExp(regexInput.value, 'g');
+        const matches = cleaned.match(regex);
+        if (matches && matches.length) {
+          matches.sort((a, b) => b.length - a.length);
+          return matches[0];
+        }
+      } catch (e) {
+        setStatus('Regex hatalı. Varsayılan tarama uygulanıyor.');
+      }
+
+      const fallback = cleaned.match(/[A-Z0-9\-]{6,}/g);
+      if (fallback && fallback.length) {
+        fallback.sort((a, b) => b.length - a.length);
+        return fallback[0];
+      }
+
+      return '';
+    }
+
+    async function scanSerial() {
+      if (!capturedImageDataUrl) {
+        setStatus('Önce fotoğraf çek.');
+        return;
+      }
+
+      try {
+        setStatus('OCR çalışıyor, biraz sürebilir...');
+        setResult('Okunuyor...');
+        const result = await Tesseract.recognize(capturedImageDataUrl, 'eng', {
+          logger: m => {
+            if (m.status) {
+              const pct = m.progress ? ' %' + Math.round(m.progress * 100) : '';
+              setStatus(m.status + pct);
+            }
+          }
+        });
+
+        const rawText = (result.data && result.data.text) ? result.data.text.toUpperCase() : '';
+        const serial = extractSerialNumber(rawText);
+
+        if (serial) {
+          manualInput.value = serial;
+          setResult(serial);
+          setStatus('Seri numarası bulundu.');
+        } else {
+          manualInput.value = '';
+          setResult('Seri numarası bulunamadı.');
+          setStatus('OCR metni okudu ama filtreye uyan değer bulunamadı.');
+        }
+      } catch (err) {
+        setStatus('OCR hatası: ' + err.message);
+        setResult('Hata oluştu.');
+      }
+    }
+
+    function renderTable() {
+      recordsTableBody.innerHTML = '';
+      records.forEach((item, index) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${index + 1}</td>
+          <td>${escapeHtml(item.serial)}</td>
+          <td>${escapeHtml(item.note || '')}</td>
+          <td>${escapeHtml(item.date)}</td>
+          <td>
+            <div class="row-actions">
+              <button class="danger" onclick="deleteRecord(${index})">Sil</button>
+            </div>
+          </td>
+        `;
+        recordsTableBody.appendChild(tr);
+      });
+    }
+
+    function saveRecords() {
+      localStorage.setItem('serial_records', JSON.stringify(records));
+    }
+
+    function addRecord() {
+      const serial = manualInput.value.trim().toUpperCase();
+      const note = noteInput.value.trim();
+
+      if (!serial) {
+        setStatus('Kaydetmek için seri numarası gerekli.');
+        return;
+      }
+
+      records.unshift({
+        serial,
+        note,
+        date: new Date().toLocaleString('tr-TR')
+      });
+
+      saveRecords();
+      renderTable();
+      setStatus('Kayıt eklendi.');
+      noteInput.value = '';
+    }
+
+    function deleteRecord(index) {
+      records.splice(index, 1);
+      saveRecords();
+      renderTable();
+      setStatus('Kayıt silindi.');
+    }
+
+    function clearRecords() {
+      if (!confirm('Tüm kayıtlar silinsin mi?')) return;
+      records = [];
+      saveRecords();
+      renderTable();
+      setStatus('Tüm kayıtlar silindi.');
+    }
+
+    function exportCSV() {
+      if (!records.length) {
+        setStatus('Dışa aktaracak kayıt yok.');
+        return;
+      }
+
+      const rows = [
+        ['Seri No', 'Not', 'Tarih'],
+        ...records.map(r => [r.serial, r.note || '', r.date])
+      ];
+
+      const csv = rows.map(row =>
+        row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')
+      ).join('\n');
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'seri-numaralari.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+      setStatus('CSV indirildi.');
+    }
+
+    function escapeHtml(text) {
+      return String(text)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    window.deleteRecord = deleteRecord;
+
+    document.getElementById('startBtn').addEventListener('click', startCamera);
+    document.getElementById('stopBtn').addEventListener('click', stopCamera);
+    document.getElementById('captureBtn').addEventListener('click', captureFrame);
+    document.getElementById('scanBtn').addEventListener('click', scanSerial);
+    document.getElementById('saveBtn').addEventListener('click', addRecord);
+    document.getElementById('clearBtn').addEventListener('click', clearRecords);
+    document.getElementById('exportBtn').addEventListener('click', exportCSV);
+
+    renderTable();
+  </script>
+</body>
+</html>
