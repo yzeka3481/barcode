@@ -3,74 +3,68 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Seri No Okuyucu - Çerçeveli</title>
+  <title>Seri No Okuyucu - Otomatik</title>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     :root{
-      --bg:#f4f7fb;
-      --card:#ffffff;
-      --text:#1f2937;
-      --muted:#6b7280;
-      --line:#dbe3ee;
-      --accent:#0f766e;
-      --danger:#dc2626;
-      --ok:#166534;
+      --bg:#f4f7fb; --card:#fff; --text:#1f2937; --muted:#6b7280; --line:#dbe3ee;
+      --accent:#0f766e; --danger:#dc2626; --ok:#166534; --warn:#92400e;
     }
     *{box-sizing:border-box}
     body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
-    .wrap{max-width:1040px;margin:0 auto;padding:16px}
+    .wrap{max-width:1080px;margin:0 auto;padding:16px}
     .title{font-size:24px;font-weight:700;margin:4px 0 8px}
     .sub{color:var(--muted);margin-bottom:16px;line-height:1.45}
     .grid{display:grid;grid-template-columns:1.25fr .75fr;gap:16px}
     .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:0 10px 24px rgba(15,23,42,.05)}
     .camera-shell{position:relative;width:100%;overflow:hidden;border-radius:14px;background:#111827;aspect-ratio:3/4}
-    video, canvas, img{width:100%;display:block;border-radius:12px;background:#111827}
-    .camera-shell video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:0}
+    video,img,canvas{width:100%;display:block;background:#111827}
+    .camera-shell video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
     .overlay{position:absolute;inset:0;pointer-events:none}
     .scan-box{position:absolute;border:3px solid rgba(34,197,94,.95);border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,.42);left:50%;top:50%;transform:translate(-50%,-50%)}
-    .scan-label{position:absolute;left:50%;top:calc(50% - 12px);transform:translate(-50%, calc(-100% - 6px));background:rgba(34,197,94,.92);color:white;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
+    .scan-label{position:absolute;left:50%;top:calc(50% - 12px);transform:translate(-50%, calc(-100% - 6px));background:rgba(34,197,94,.92);color:#fff;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
     .controls{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
     button{border:none;border-radius:12px;padding:12px 14px;font-size:15px;font-weight:600;cursor:pointer}
-    .primary{background:var(--accent);color:#fff}
-    .secondary{background:#e6f4f1;color:var(--accent)}
-    .info{background:#e8f5fd;color:#0369a1}
-    .danger{background:#fee2e2;color:var(--danger)}
-    .ghost{background:#f3f4f6;color:#111827}
-    input, textarea, select{width:100%;border:1px solid var(--line);border-radius:12px;padding:12px;font-size:15px;margin-top:8px;background:#fff}
+    .primary{background:var(--accent);color:#fff}.secondary{background:#e6f4f1;color:var(--accent)}
+    .info{background:#e8f5fd;color:#0369a1}.danger{background:#fee2e2;color:var(--danger)}.ghost{background:#f3f4f6;color:#111827}
+    input{width:100%;border:1px solid var(--line);border-radius:12px;padding:12px;font-size:15px;margin-top:8px;background:#fff}
     input[type="range"]{padding:0}
     label{display:block;font-size:14px;color:#374151;margin-top:12px;font-weight:600}
     .status{margin-top:10px;padding:10px 12px;border-radius:12px;background:#f8fafc;border:1px solid var(--line);color:#334155;min-height:44px;line-height:1.4}
     .result{font-size:18px;font-weight:700;margin-top:10px;padding:12px;border-radius:12px;background:#f0fdf4;border:1px solid #bbf7d0;color:var(--ok);word-break:break-word}
     .small{font-size:13px;color:var(--muted);line-height:1.45}
     .split2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    .range-value{font-size:13px;color:#475569;margin-top:4px}
+    .range-value,.debug{font-size:12px;color:#64748b;margin-top:4px}
+    .badge{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700}
+    .badge-ok{background:#ecfdf5;color:#166534}
+    .badge-warn{background:#fff7ed;color:#92400e}
     table{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px}
-    th, td{border-bottom:1px solid var(--line);padding:10px 8px;text-align:left;vertical-align:top}
+    th,td{border-bottom:1px solid var(--line);padding:10px 8px;text-align:left;vertical-align:top}
     th{background:#f8fafc}
     .row-actions{display:flex;gap:8px;flex-wrap:wrap}
     .preview-box{margin-top:12px}
     .pill{display:inline-block;font-size:12px;font-weight:700;padding:6px 8px;border-radius:999px;background:#eef2ff;color:#4338ca;margin-bottom:8px}
     .hidden-canvas{display:none}
-    @media (max-width: 860px){.grid{grid-template-columns:1fr}}
+    @media (max-width:860px){.grid{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="title">Seri Numarası Okuyucu</div>
     <div class="sub">
-      Bu sürümde OCR tüm fotoğrafı değil, ekrandaki <b>yeşil okuma çerçevesinin içini</b> tarar.
-      Böylece yanlış alanları seri no sanma ihtimali daha düşer.
+      Kamera açık kalır. Çerçeve içine etiketi getirince sistem belirlediğin ön ek metni
+      (<b>ör. S/N:</b>) arar ve bulursa seri numarasını otomatik çıkarır.
     </div>
 
     <div class="grid">
       <div class="card">
-        <div class="pill">1. Kamera ve okuma çerçevesi</div>
+        <div class="pill">1. Canlı otomatik okuma</div>
 
         <div class="camera-shell" id="cameraShell">
           <video id="video" autoplay playsinline muted></video>
           <div class="overlay">
             <div class="scan-box" id="scanBox"></div>
-            <div class="scan-label">Seri noyu bu alana hizala</div>
+            <div class="scan-label">Etiketi bu alana getir</div>
           </div>
         </div>
 
@@ -79,9 +73,13 @@
 
         <div class="controls">
           <button class="primary" id="startBtn">Kamerayı Aç</button>
-          <button class="secondary" id="captureBtn">Çerçeveyi Tara</button>
-          <button class="info" id="scanBtn">OCR Oku</button>
+          <button class="secondary" id="autoBtn">Otomatik Okumayı Başlat</button>
+          <button class="ghost" id="pauseBtn">Duraklat</button>
           <button class="danger" id="stopBtn">Kamerayı Kapat</button>
+        </div>
+
+        <div class="controls">
+          <span class="badge badge-warn" id="autoState">Otomatik okuma kapalı</span>
         </div>
 
         <div class="split2">
@@ -92,29 +90,35 @@
           </div>
           <div>
             <label for="boxHeight">Çerçeve yüksekliği</label>
-            <input id="boxHeight" type="range" min="10" max="45" value="20" />
-            <div class="range-value" id="boxHeightVal">%20</div>
+            <input id="boxHeight" type="range" min="10" max="45" value="18" />
+            <div class="range-value" id="boxHeightVal">%18</div>
           </div>
         </div>
 
-        <label for="regexInput">Seri numarası filtresi (Regex)</label>
-        <input id="regexInput" value="[A-Z0-9\\-]{6,}" />
+        <label for="prefixInput">Aranacak ön ek metin</label>
+        <input id="prefixInput" value="S/N:" placeholder="Örn: S/N:" />
         <div class="small">
-          Yalnızca bu kurala uyan sonuç kabul edilir. Örnek:
-          <b>[A-Z]{2}[0-9]{8}</b> veya <b>SN\\-[0-9]{6,}</b>
+          Sistem önce bu metni arar. Metni görmeden seri noyu kabul etmez.
         </div>
 
-        <label for="manualInput">Bulunan seri numarası / manuel düzeltme</label>
-        <input id="manualInput" placeholder="Örn: SN-12345678" />
+        <label for="regexInput">Seri numarası filtresi (prefix sonrası uygulanır)</label>
+        <input id="regexInput" value="[A-Z0-9\\-]{4,}" />
+        <div class="small">
+          Örnek: <b>[A-Z]{2}[0-9]{8}</b> veya <b>[0-9]{10}</b>
+        </div>
+
+        <label for="manualInput">Bulunan seri numarası</label>
+        <input id="manualInput" placeholder="Otomatik dolacak" />
 
         <label for="noteInput">Not</label>
         <input id="noteInput" placeholder="İsteğe bağlı açıklama" />
 
         <div class="result" id="resultBox">Henüz okunmadı.</div>
         <div class="status" id="statusBox">Hazır.</div>
+        <div class="debug" id="debugBox"></div>
 
         <div class="preview-box">
-          <label>Kırpılan okuma alanı</label>
+          <label>Kırpılan alan önizlemesi</label>
           <img id="preview" alt="Kırpılmış önizleme" />
         </div>
       </div>
@@ -123,7 +127,7 @@
         <div class="pill">2. Kayıt listesi</div>
 
         <div class="controls" style="margin-top:0;">
-          <button class="primary" id="saveBtn">Listeye Kaydet</button>
+          <button class="primary" id="saveBtn">Bulunanı Kaydet</button>
           <button class="ghost" id="exportBtn">CSV Dışa Aktar</button>
           <button class="danger" id="clearBtn">Tümünü Sil</button>
         </div>
@@ -142,7 +146,8 @@
         </table>
 
         <div class="small" style="margin-top:10px;">
-          Kayıtlar tarayıcıda saklanır. Gerekirse sonra Firebase veya API'ye bağlarız.
+          Aynı seri numarası peş peşe tekrar okunursa otomatik kaydetmez.
+          İstersen sonraki adımda “görür görmez otomatik listeye ekle” de yaparız.
         </div>
       </div>
     </div>
@@ -155,9 +160,11 @@
     const preview = document.getElementById('preview');
     const resultBox = document.getElementById('resultBox');
     const statusBox = document.getElementById('statusBox');
+    const debugBox = document.getElementById('debugBox');
     const manualInput = document.getElementById('manualInput');
     const noteInput = document.getElementById('noteInput');
     const regexInput = document.getElementById('regexInput');
+    const prefixInput = document.getElementById('prefixInput');
     const recordsTableBody = document.querySelector('#recordsTable tbody');
     const cameraShell = document.getElementById('cameraShell');
     const scanBox = document.getElementById('scanBox');
@@ -165,13 +172,20 @@
     const boxHeight = document.getElementById('boxHeight');
     const boxWidthVal = document.getElementById('boxWidthVal');
     const boxHeightVal = document.getElementById('boxHeightVal');
+    const autoState = document.getElementById('autoState');
 
     let stream = null;
-    let croppedImageDataUrl = '';
-    let records = JSON.parse(localStorage.getItem('serial_records_v2') || '[]');
+    let records = JSON.parse(localStorage.getItem('serial_records_auto_v1') || '[]');
+    let autoMode = false;
+    let isScanning = false;
+    let autoTimer = null;
+    let lastAcceptedSerial = '';
+    let lastAcceptedAt = 0;
+    let ocrWorkerBusy = false;
 
     function setStatus(msg) { statusBox.textContent = msg; }
     function setResult(msg) { resultBox.textContent = msg; }
+    function setDebug(msg) { debugBox.textContent = msg || ''; }
 
     function updateScanBox() {
       const w = Number(boxWidth.value);
@@ -182,21 +196,36 @@
       boxHeightVal.textContent = '%' + h;
     }
 
+    function setAutoBadge() {
+      if (autoMode) {
+        autoState.textContent = 'Otomatik okuma açık';
+        autoState.className = 'badge badge-ok';
+      } else {
+        autoState.textContent = 'Otomatik okuma kapalı';
+        autoState.className = 'badge badge-warn';
+      }
+    }
+
     async function startCamera() {
       try {
         setStatus('Kamera açılıyor...');
         stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+          video: {
+            facingMode: { ideal: 'environment' },
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
+          },
           audio: false
         });
         video.srcObject = stream;
-        setStatus('Kamera açık. Seri numarasını yeşil kutuya hizala.');
+        setStatus('Kamera açık. Etiketi çerçeve içine getir.');
       } catch (err) {
         setStatus('Kamera açılamadı: ' + err.message);
       }
     }
 
     function stopCamera() {
+      stopAutoMode();
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
         stream = null;
@@ -205,129 +234,173 @@
       setStatus('Kamera kapatıldı.');
     }
 
-    function captureScanArea() {
-      if (!video.srcObject) {
-        setStatus('Önce kamerayı aç.');
-        return;
-      }
+    function getDisplayedVideoMetrics() {
+      const shellW = cameraShell.clientWidth;
+      const shellH = cameraShell.clientHeight;
+      const videoW = video.videoWidth;
+      const videoH = video.videoHeight;
+      const scale = Math.max(shellW / videoW, shellH / videoH);
+      const displayedW = videoW * scale;
+      const displayedH = videoH * scale;
+      const offsetX = (shellW - displayedW) / 2;
+      const offsetY = (shellH - displayedH) / 2;
+      return { shellW, shellH, videoW, videoH, scale, displayedW, displayedH, offsetX, offsetY };
+    }
 
-      const vw = video.videoWidth;
-      const vh = video.videoHeight;
-      if (!vw || !vh) {
-        setStatus('Video hazır değil. 1-2 saniye sonra tekrar dene.');
-        return;
-      }
+    function captureScanArea() {
+      const videoW = video.videoWidth;
+      const videoH = video.videoHeight;
+      if (!video.srcObject || !videoW || !videoH) return null;
 
       const shellRect = cameraShell.getBoundingClientRect();
       const boxRect = scanBox.getBoundingClientRect();
+      const metrics = getDisplayedVideoMetrics();
 
-      const scaleX = vw / shellRect.width;
-      const scaleY = vh / shellRect.height;
+      const boxXInShell = boxRect.left - shellRect.left;
+      const boxYInShell = boxRect.top - shellRect.top;
+      const boxWInShell = boxRect.width;
+      const boxHInShell = boxRect.height;
 
-      const sx = Math.max(0, Math.round((boxRect.left - shellRect.left) * scaleX));
-      const sy = Math.max(0, Math.round((boxRect.top - shellRect.top) * scaleY));
-      const sw = Math.min(vw - sx, Math.round(boxRect.width * scaleX));
-      const sh = Math.min(vh - sy, Math.round(boxRect.height * scaleY));
+      const sx = Math.round((boxXInShell - metrics.offsetX) / metrics.scale);
+      const sy = Math.round((boxYInShell - metrics.offsetY) / metrics.scale);
+      const sw = Math.round(boxWInShell / metrics.scale);
+      const sh = Math.round(boxHInShell / metrics.scale);
 
-      fullCanvas.width = vw;
-      fullCanvas.height = vh;
+      const safeSx = Math.max(0, sx);
+      const safeSy = Math.max(0, sy);
+      const safeSw = Math.min(videoW - safeSx, sw);
+      const safeSh = Math.min(videoH - safeSy, sh);
+
+      if (safeSw <= 0 || safeSh <= 0) return null;
+
+      fullCanvas.width = videoW;
+      fullCanvas.height = videoH;
       const fullCtx = fullCanvas.getContext('2d');
-      fullCtx.drawImage(video, 0, 0, vw, vh);
+      fullCtx.drawImage(video, 0, 0, videoW, videoH);
 
-      cropCanvas.width = sw;
-      cropCanvas.height = sh;
+      cropCanvas.width = safeSw;
+      cropCanvas.height = safeSh;
       const cropCtx = cropCanvas.getContext('2d');
-      cropCtx.drawImage(fullCanvas, sx, sy, sw, sh, 0, 0, sw, sh);
+      cropCtx.drawImage(fullCanvas, safeSx, safeSy, safeSw, safeSh, 0, 0, safeSw, safeSh);
 
       enhanceForOCR(cropCanvas);
-
-      croppedImageDataUrl = cropCanvas.toDataURL('image/jpeg', 0.95);
-      preview.src = croppedImageDataUrl;
-      setStatus('Çerçeve içi görüntü alındı.');
+      const dataUrl = cropCanvas.toDataURL('image/jpeg', 0.9);
+      preview.src = dataUrl;
+      setDebug(`src x:${safeSx} y:${safeSy} w:${safeSw} h:${safeSh}`);
+      return dataUrl;
     }
 
     function enhanceForOCR(canvas) {
       const ctx = canvas.getContext('2d');
       const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const d = img.data;
-
       for (let i = 0; i < d.length; i += 4) {
-        const r = d[i];
-        const g = d[i + 1];
-        const b = d[i + 2];
+        const r = d[i], g = d[i+1], b = d[i+2];
         let gray = 0.299 * r + 0.587 * g + 0.114 * b;
         gray = gray > 145 ? 255 : 0;
-        d[i] = gray;
-        d[i + 1] = gray;
-        d[i + 2] = gray;
+        d[i] = d[i+1] = d[i+2] = gray;
       }
       ctx.putImageData(img, 0, 0);
     }
 
-    function extractSerialNumber(rawText) {
-      const cleaned = rawText
-        .replace(/\r/g, '\n')
-        .split('\n')
-        .map(x => x.trim())
-        .filter(Boolean)
-        .join(' ')
+    function normalizeText(s) {
+      return String(s || '')
+        .toUpperCase()
         .replace(/\s+/g, ' ')
-        .toUpperCase();
-
-      try {
-        const regex = new RegExp(regexInput.value, 'g');
-        const matches = cleaned.match(regex);
-        if (matches && matches.length) {
-          matches.sort((a, b) => b.length - a.length);
-          return matches[0];
-        }
-      } catch (e) {
-        setStatus('Regex hatalı. Varsayılan filtre denenecek.');
-      }
-
-      const fallback = cleaned.match(/[A-Z0-9\-]{6,}/g);
-      if (fallback && fallback.length) {
-        fallback.sort((a, b) => b.length - a.length);
-        return fallback[0];
-      }
-
-      return '';
+        .trim();
     }
 
-    async function scanSerial() {
-      if (!croppedImageDataUrl) {
-        setStatus('Önce "Çerçeveyi Tara" butonuna bas.');
-        return;
+    function escapeRegex(text) {
+      return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    function extractSerialAfterPrefix(rawText) {
+      const text = normalizeText(rawText);
+      const prefix = normalizeText(prefixInput.value);
+
+      if (!prefix) {
+        return { serial: '', reason: 'Ön ek boş.' };
       }
 
+      const prefixRegex = new RegExp(escapeRegex(prefix).replace(/\s+/g, '\\s*'));
+      const prefixMatch = text.match(prefixRegex);
+
+      if (!prefixMatch) {
+        return { serial: '', reason: 'Ön ek bulunamadı.' };
+      }
+
+      const afterPrefix = text.slice(prefixMatch.index + prefixMatch[0].length).trim();
+      const shortArea = afterPrefix.slice(0, 40);
+
       try {
-        setStatus('OCR çalışıyor...');
-        setResult('Okunuyor...');
+        const serialRegex = new RegExp(regexInput.value);
+        const m = shortArea.match(serialRegex);
+        if (m && m[0]) {
+          return { serial: m[0].replace(/\s+/g, ''), reason: 'Bulundu.' };
+        }
+      } catch (e) {
+        return { serial: '', reason: 'Regex hatalı.' };
+      }
 
-        const result = await Tesseract.recognize(croppedImageDataUrl, 'eng', {
-          logger: m => {
-            if (m.status) {
-              const pct = m.progress ? ' %' + Math.round(m.progress * 100) : '';
-              setStatus(m.status + pct);
-            }
+      return { serial: '', reason: 'Prefix bulundu ama seri no filtresi eşleşmedi.' };
+    }
+
+    async function runSingleAutoScan() {
+      if (!autoMode || ocrWorkerBusy || !video.srcObject) return;
+      const image = captureScanArea();
+      if (!image) return;
+
+      ocrWorkerBusy = true;
+      try {
+        setStatus('Çerçeve içi otomatik taranıyor...');
+        const result = await Tesseract.recognize(image, 'eng');
+        const rawText = result?.data?.text || '';
+        const parsed = extractSerialAfterPrefix(rawText);
+
+        if (parsed.serial) {
+          const now = Date.now();
+          const repeated = parsed.serial === lastAcceptedSerial && (now - lastAcceptedAt < 3000);
+
+          manualInput.value = parsed.serial;
+          setResult(parsed.serial);
+
+          if (!repeated) {
+            lastAcceptedSerial = parsed.serial;
+            lastAcceptedAt = now;
+            setStatus('Seri numarası bulundu.');
+          } else {
+            setStatus('Aynı seri no tekrar görüldü, yeniden kabul edilmedi.');
           }
-        });
-
-        const rawText = (result.data && result.data.text) ? result.data.text.toUpperCase() : '';
-        const serial = extractSerialNumber(rawText);
-
-        if (serial) {
-          manualInput.value = serial;
-          setResult(serial);
-          setStatus('Seri numarası bulundu.');
         } else {
-          manualInput.value = '';
           setResult('Uygun seri numarası bulunamadı.');
-          setStatus('OCR metin okudu ama filtreye uyan sonuç çıkmadı.');
+          setStatus(parsed.reason);
         }
       } catch (err) {
         setStatus('OCR hatası: ' + err.message);
-        setResult('Hata oluştu.');
+      } finally {
+        ocrWorkerBusy = false;
+      }
+    }
+
+    function startAutoMode() {
+      if (!video.srcObject) {
+        setStatus('Önce kamerayı aç.');
+        return;
+      }
+      if (autoMode) return;
+      autoMode = true;
+      setAutoBadge();
+      setStatus('Otomatik okuma başladı.');
+      runSingleAutoScan();
+      autoTimer = setInterval(runSingleAutoScan, 1800);
+    }
+
+    function stopAutoMode() {
+      autoMode = false;
+      setAutoBadge();
+      if (autoTimer) {
+        clearInterval(autoTimer);
+        autoTimer = null;
       }
     }
 
@@ -347,14 +420,14 @@
     }
 
     function saveRecords() {
-      localStorage.setItem('serial_records_v2', JSON.stringify(records));
+      localStorage.setItem('serial_records_auto_v1', JSON.stringify(records));
     }
 
     function addRecord() {
       const serial = manualInput.value.trim().toUpperCase();
       const note = noteInput.value.trim();
       if (!serial) {
-        setStatus('Kaydetmek için seri numarası gerekli.');
+        setStatus('Kaydedilecek seri numarası yok.');
         return;
       }
       records.unshift({ serial, note, date: new Date().toLocaleString('tr-TR') });
@@ -406,16 +479,22 @@
     }
 
     window.deleteRecord = deleteRecord;
+
     document.getElementById('startBtn').addEventListener('click', startCamera);
+    document.getElementById('autoBtn').addEventListener('click', startAutoMode);
+    document.getElementById('pauseBtn').addEventListener('click', () => {
+      stopAutoMode();
+      setStatus('Otomatik okuma duraklatıldı.');
+    });
     document.getElementById('stopBtn').addEventListener('click', stopCamera);
-    document.getElementById('captureBtn').addEventListener('click', captureScanArea);
-    document.getElementById('scanBtn').addEventListener('click', scanSerial);
     document.getElementById('saveBtn').addEventListener('click', addRecord);
     document.getElementById('clearBtn').addEventListener('click', clearRecords);
     document.getElementById('exportBtn').addEventListener('click', exportCSV);
     boxWidth.addEventListener('input', updateScanBox);
     boxHeight.addEventListener('input', updateScanBox);
+
     updateScanBox();
+    setAutoBadge();
     renderTable();
   </script>
 </body>
