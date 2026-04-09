@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Seri No Okuyucu - Şablon Öğretmeli</title>
+  <title>Seri No Okuyucu - OCR Referanslı</title>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     :root{
@@ -24,6 +24,7 @@
     .guide-box{position:absolute;border:3px solid rgba(34,197,94,.95);border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,.38)}
     .guide-label{position:absolute;background:rgba(34,197,94,.92);color:#fff;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
     .select-box{position:absolute;border:3px dashed rgba(14,165,233,.98);background:rgba(14,165,233,.12);border-radius:10px;display:none}
+    .match-box{position:absolute;border:3px solid rgba(245,158,11,.98);background:rgba(245,158,11,.12);border-radius:10px;display:none}
     .controls{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
     button{border:none;border-radius:12px;padding:12px 14px;font-size:15px;font-weight:600;cursor:pointer}
     .primary{background:var(--accent);color:#fff}.secondary{background:#e6f4f1;color:var(--accent)}
@@ -54,14 +55,13 @@
   <div class="wrap">
     <div class="title">Seri Numarası Okuyucu</div>
     <div class="sub">
-      Bu sürümde bir kez örnek fotoğraf çekip <b>seri numarası alanını elle seçiyorsun</b>.
-      Sistem o alanın etiketteki <b>konum oranını</b> öğreniyor. Sonraki çekimlerde aynı etikette
-      aynı bölgeyi otomatik kırpıp seri numarasını oradan okuyor.
+      Bu sürümde sistem, şablonda seçtiğin alandaki <b>OCR referans metnini</b> öğrenir. Örneğin seçtiğin yerde
+      <b>S/N:</b> varsa, sonraki etiketlerde konuma değil bu metne göre arama yapar. Metni bulduğu satırdan seri numarasını çıkarır.
     </div>
 
     <div class="grid">
       <div class="card">
-        <div class="pill">1. Kamera ve öğretme alanı</div>
+        <div class="pill">1. Referans metni öğret</div>
 
         <div class="camera-shell" id="cameraShell">
           <video id="video" autoplay playsinline muted></video>
@@ -70,6 +70,7 @@
             <div class="guide-box" id="guideBox"></div>
             <div class="guide-label" id="guideLabel">Etiketi bu alana getir</div>
             <div class="select-box" id="selectBox"></div>
+            <div class="match-box" id="matchBox"></div>
           </div>
         </div>
 
@@ -79,15 +80,21 @@
         <div class="controls">
           <button class="primary" id="startBtn">Kamerayı Aç</button>
           <button class="secondary" id="teachShotBtn">Örnek Fotoğraf Çek</button>
-          <button class="info" id="saveTemplateBtn">Seçimi Şablon Olarak Kaydet</button>
+          <button class="info" id="learnRefBtn">Seçimden Referans Öğren</button>
           <button class="secondary" id="liveReadBtn">Canlı Okumayı Başlat</button>
           <button class="ghost" id="pauseBtn">Duraklat</button>
           <button class="danger" id="stopBtn">Kamerayı Kapat</button>
         </div>
 
         <div class="controls">
-          <span class="badge badge-warn" id="templateState">Şablon yok</span>
+          <span class="badge badge-warn" id="templateState">Referans yok</span>
           <span class="badge badge-warn" id="autoState">Canlı okuma kapalı</span>
+        </div>
+
+        <label for="referenceInput">Referans metni</label>
+        <input id="referenceInput" placeholder="Örn: S/N:" />
+        <div class="small">
+          İstersen elle yaz. Boş bırakırsan sistem seçtiğin alandaki OCR sonucundan bunu öğrenmeye çalışır.
         </div>
 
         <label for="regexInput">Seri numarası filtresi</label>
@@ -105,18 +112,18 @@
         <div class="result" id="resultBox">Henüz okunmadı.</div>
         <div class="status" id="statusBox">Hazır.</div>
         <div class="notebox">
-          Öğretme akışı: <b>Örnek Fotoğraf Çek</b> → mavi kutuyla seri no alanını sürükleyip seç →
-          <b>Seçimi Şablon Olarak Kaydet</b> → <b>Canlı Okumayı Başlat</b>
+          Akış: <b>Örnek Fotoğraf Çek</b> → mavi kutuyla referans alanını seç → <b>Seçimden Referans Öğren</b> →
+          sonra <b>Canlı Okumayı Başlat</b>. Sonraki etiketlerde sistem seçtiğin konumu değil, bu referans metni arar.
         </div>
         <div class="debug" id="debugBox"></div>
 
         <div class="preview-grid">
           <div>
-            <label>Örnekte seçilen alan</label>
+            <label>Örnekte seçilen referans alanı</label>
             <img id="templatePreview" alt="Şablon önizleme" />
           </div>
           <div>
-            <label>Son otomatik okuma alanı</label>
+            <label>Son bulunan alan</label>
             <img id="livePreview" alt="Canlı okuma önizleme" />
           </div>
         </div>
@@ -145,8 +152,7 @@
         </table>
 
         <div class="small" style="margin-top:10px;">
-          Bu yaklaşım, ön ek aramaktan daha stabildir. Etiket düzeni benzer kaldığı sürece
-          sistem hep aynı yeri okur.
+          Sarı kutu, canlı taramada referans metninin bulunduğu bölgeyi gösterir.
         </div>
       </div>
     </div>
@@ -165,18 +171,20 @@
     const manualInput = document.getElementById('manualInput');
     const noteInput = document.getElementById('noteInput');
     const regexInput = document.getElementById('regexInput');
+    const referenceInput = document.getElementById('referenceInput');
     const recordsTableBody = document.querySelector('#recordsTable tbody');
     const cameraShell = document.getElementById('cameraShell');
     const guideBox = document.getElementById('guideBox');
     const guideLabel = document.getElementById('guideLabel');
     const selectBox = document.getElementById('selectBox');
+    const matchBox = document.getElementById('matchBox');
     const templateState = document.getElementById('templateState');
     const autoState = document.getElementById('autoState');
 
     let stream = null;
     let frozenImageDataUrl = '';
-    let template = JSON.parse(localStorage.getItem('serial_template_v1') || 'null');
-    let records = JSON.parse(localStorage.getItem('serial_records_template_v1') || '[]');
+    let referenceConfig = JSON.parse(localStorage.getItem('serial_reference_config_v1') || 'null');
+    let records = JSON.parse(localStorage.getItem('serial_records_reference_v1') || '[]');
 
     let teachMode = false;
     let autoMode = false;
@@ -192,12 +200,12 @@
     function setResult(msg){ resultBox.textContent = msg; }
     function setDebug(msg){ debugBox.textContent = msg || ''; }
 
-    function setTemplateBadge() {
-      if (template) {
-        templateState.textContent = 'Şablon hazır';
+    function setReferenceBadge() {
+      if (referenceConfig && referenceConfig.referenceText) {
+        templateState.textContent = 'Referans hazır: ' + referenceConfig.referenceText;
         templateState.className = 'badge badge-ok';
       } else {
-        templateState.textContent = 'Şablon yok';
+        templateState.textContent = 'Referans yok';
         templateState.className = 'badge badge-warn';
       }
     }
@@ -222,15 +230,30 @@
       guideLabel.style.transform = 'translate(-50%, -100%)';
     }
 
+    function normalizeText(s) {
+      return String(s || '')
+        .toUpperCase()
+        .replace(/[|]/g, 'I')
+        .replace(/[“”‘’]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
+    function escapeRegex(text) {
+      return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    function buildLooseReferenceRegex(refText) {
+      const chars = normalizeText(refText).replace(/\s+/g, '');
+      const parts = chars.split('').map(ch => escapeRegex(ch));
+      return new RegExp(parts.join('\\s*'));
+    }
+
     async function startCamera() {
       try {
         setStatus('Kamera açılıyor...');
         stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: { ideal: 'environment' },
-            width: { ideal: 1920 },
-            height: { ideal: 1080 }
-          },
+          video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
           audio: false
         });
         video.srcObject = stream;
@@ -238,6 +261,7 @@
         freezeImage.style.display = 'none';
         teachMode = false;
         selectBox.style.display = 'none';
+        matchBox.style.display = 'none';
         setStatus('Kamera açık.');
       } catch (err) {
         setStatus('Kamera açılamadı: ' + err.message);
@@ -252,27 +276,6 @@
         video.srcObject = null;
       }
       setStatus('Kamera kapatıldı.');
-    }
-
-    function getDisplayedMetrics() {
-      const shellW = cameraShell.clientWidth;
-      const shellH = cameraShell.clientHeight;
-      const srcW = video.style.display !== 'none' ? video.videoWidth : fullCanvas.width;
-      const srcH = video.style.display !== 'none' ? video.videoHeight : fullCanvas.height;
-      const scale = Math.max(shellW / srcW, shellH / srcH);
-      const displayedW = srcW * scale;
-      const displayedH = srcH * scale;
-      const offsetX = (shellW - displayedW) / 2;
-      const offsetY = (shellH - displayedH) / 2;
-      return { shellW, shellH, srcW, srcH, scale, offsetX, offsetY };
-    }
-
-    function drawSelectionBox(sel) {
-      selectBox.style.display = 'block';
-      selectBox.style.left = sel.x + 'px';
-      selectBox.style.top = sel.y + 'px';
-      selectBox.style.width = sel.w + 'px';
-      selectBox.style.height = sel.h + 'px';
     }
 
     function takeTeachShot() {
@@ -292,7 +295,8 @@
       teachMode = true;
       selection = null;
       selectBox.style.display = 'none';
-      setStatus('Örnek fotoğraf çekildi. Mavi kutu ile seri no alanını seç.');
+      matchBox.style.display = 'none';
+      setStatus('Örnek fotoğraf çekildi. Mavi kutuyla referans alanını seç.');
     }
 
     function clamp(v, min, max) {
@@ -303,7 +307,15 @@
       const rect = cameraShell.getBoundingClientRect();
       const x = clamp(e.clientX - rect.left, 0, rect.width);
       const y = clamp(e.clientY - rect.top, 0, rect.height);
-      return { x, y, rect };
+      return { x, y };
+    }
+
+    function drawSelectionBox(sel) {
+      selectBox.style.display = 'block';
+      selectBox.style.left = sel.x + 'px';
+      selectBox.style.top = sel.y + 'px';
+      selectBox.style.width = sel.w + 'px';
+      selectBox.style.height = sel.h + 'px';
     }
 
     cameraShell.addEventListener('pointerdown', (e) => {
@@ -334,11 +346,25 @@
         setStatus('Seçim çok küçük. Tekrar seç.');
         return;
       }
-      setStatus('Seçim hazır. Şimdi "Seçimi Şablon Olarak Kaydet"e bas.');
+      setStatus('Seçim hazır. Şimdi "Seçimden Referans Öğren"e bas.');
     }
 
     cameraShell.addEventListener('pointerup', finishSelection);
     cameraShell.addEventListener('pointercancel', finishSelection);
+
+    function cropDomSelectionToCanvas(sourceCanvas, sel) {
+      const shellW = cameraShell.clientWidth;
+      const shellH = cameraShell.clientHeight;
+      const sx = Math.round(sourceCanvas.width * (sel.x / shellW));
+      const sy = Math.round(sourceCanvas.height * (sel.y / shellH));
+      const sw = Math.round(sourceCanvas.width * (sel.w / shellW));
+      const sh = Math.round(sourceCanvas.height * (sel.h / shellH));
+
+      cropCanvas.width = sw;
+      cropCanvas.height = sh;
+      cropCanvas.getContext('2d').drawImage(sourceCanvas, sx, sy, sw, sh, 0, 0, sw, sh);
+      return { canvas: cropCanvas, sx, sy, sw, sh };
+    }
 
     function enhanceForOCR(canvas) {
       const ctx = canvas.getContext('2d');
@@ -353,52 +379,48 @@
       ctx.putImageData(img, 0, 0);
     }
 
-    function saveTemplateFromSelection() {
+    async function learnReferenceFromSelection() {
       if (!teachMode || !selection) {
-        setStatus('Önce örnek fotoğrafta bir alan seç.');
+        setStatus('Önce örnek fotoğrafta referans alanını seç.');
         return;
       }
-      const shellW = cameraShell.clientWidth;
-      const shellH = cameraShell.clientHeight;
-      template = {
-        xRatio: selection.x / shellW,
-        yRatio: selection.y / shellH,
-        wRatio: selection.w / shellW,
-        hRatio: selection.h / shellH
-      };
-      localStorage.setItem('serial_template_v1', JSON.stringify(template));
-      setTemplateBadge();
 
-      const crop = cropFromRatios(fullCanvas, template);
-      if (crop) {
-        enhanceForOCR(crop);
-        templatePreview.src = crop.toDataURL('image/jpeg', 0.95);
+      const cropInfo = cropDomSelectionToCanvas(fullCanvas, selection);
+      enhanceForOCR(cropInfo.canvas);
+      templatePreview.src = cropInfo.canvas.toDataURL('image/jpeg', 0.95);
+
+      const manualReference = normalizeText(referenceInput.value);
+      let learnedReference = manualReference;
+
+      if (!learnedReference) {
+        setStatus('Seçilen alandan referans metni okunuyor...');
+        try {
+          const result = await Tesseract.recognize(templatePreview.src, 'eng');
+          const text = normalizeText(result?.data?.text || '');
+          if (!text) {
+            setStatus('Seçilen alandaki metin okunamadı. Referansı elle yazman daha iyi olur.');
+            return;
+          }
+          learnedReference = text.split(' ')[0] || text;
+        } catch (err) {
+          setStatus('Referans öğrenme hatası: ' + err.message);
+          return;
+        }
       }
+
+      referenceConfig = {
+        referenceText: learnedReference,
+        referenceRegexSource: buildLooseReferenceRegex(learnedReference).source
+      };
+      localStorage.setItem('serial_reference_config_v1', JSON.stringify(referenceConfig));
+      referenceInput.value = learnedReference;
+      setReferenceBadge();
 
       teachMode = false;
       freezeImage.style.display = 'none';
       video.style.display = 'block';
       selectBox.style.display = 'none';
-      setStatus('Şablon kaydedildi. Artık canlı okumayı başlatabilirsin.');
-    }
-
-    function cropFromRatios(sourceCanvas, ratios) {
-      const sx = Math.round(sourceCanvas.width * ratios.xRatio);
-      const sy = Math.round(sourceCanvas.height * ratios.yRatio);
-      const sw = Math.round(sourceCanvas.width * ratios.wRatio);
-      const sh = Math.round(sourceCanvas.height * ratios.hRatio);
-
-      if (sw <= 0 || sh <= 0) return null;
-
-      const safeSx = Math.max(0, sx);
-      const safeSy = Math.max(0, sy);
-      const safeSw = Math.min(sourceCanvas.width - safeSx, sw);
-      const safeSh = Math.min(sourceCanvas.height - safeSy, sh);
-
-      cropCanvas.width = safeSw;
-      cropCanvas.height = safeSh;
-      cropCanvas.getContext('2d').drawImage(sourceCanvas, safeSx, safeSy, safeSw, safeSh, 0, 0, safeSw, safeSh);
-      return cropCanvas;
+      setStatus('Referans kaydedildi. Artık canlı okumayı başlatabilirsin.');
     }
 
     function captureCurrentFrameToCanvas() {
@@ -409,24 +431,45 @@
       return fullCanvas;
     }
 
-    function extractSerial(rawText) {
-      const text = String(rawText || '')
-        .toUpperCase()
-        .replace(/\r/g, '\n')
-        .split('\n')
-        .map(x => x.trim())
-        .filter(Boolean)
-        .join(' ')
-        .replace(/\s+/g, ' ')
-        .trim();
+    function mapSourceToOverlayRect(srcX, srcY, srcW, srcH, sourceCanvas) {
+      const shellW = cameraShell.clientWidth;
+      const shellH = cameraShell.clientHeight;
+      const scale = Math.max(shellW / sourceCanvas.width, shellH / sourceCanvas.height);
+      const displayedW = sourceCanvas.width * scale;
+      const displayedH = sourceCanvas.height * scale;
+      const offsetX = (shellW - displayedW) / 2;
+      const offsetY = (shellH - displayedH) / 2;
+
+      return {
+        x: offsetX + srcX * scale,
+        y: offsetY + srcY * scale,
+        w: srcW * scale,
+        h: srcH * scale
+      };
+    }
+
+    function drawMatchBox(rect) {
+      matchBox.style.display = 'block';
+      matchBox.style.left = rect.x + 'px';
+      matchBox.style.top = rect.y + 'px';
+      matchBox.style.width = rect.w + 'px';
+      matchBox.style.height = rect.h + 'px';
+    }
+
+    function extractSerialNearReference(text, referenceText) {
+      const cleaned = normalizeText(text);
+      const refRegex = buildLooseReferenceRegex(referenceText);
+      const refMatch = cleaned.match(refRegex);
+
+      if (!refMatch) return '';
+
+      const after = cleaned.slice(refMatch.index + refMatch[0].length).trim();
+      const nearby = after.slice(0, 40);
 
       try {
-        const re = new RegExp(regexInput.value, 'g');
-        const matches = text.match(re);
-        if (matches && matches.length) {
-          matches.sort((a, b) => b.length - a.length);
-          return matches[0].replace(/\s+/g, '');
-        }
+        const re = new RegExp(regexInput.value);
+        const m = nearby.match(re);
+        if (m && m[0]) return m[0].replace(/\s+/g, '');
       } catch (e) {
         return '';
       }
@@ -434,39 +477,88 @@
     }
 
     async function runLiveRead() {
-      if (!autoMode || ocrBusy || !template) return;
+      if (!autoMode || ocrBusy || !referenceConfig) return;
+
       const source = captureCurrentFrameToCanvas();
       if (!source) return;
 
-      const crop = cropFromRatios(source, template);
-      if (!crop) return;
-
-      enhanceForOCR(crop);
-      const dataUrl = crop.toDataURL('image/jpeg', 0.92);
-      livePreview.src = dataUrl;
-
       ocrBusy = true;
       try {
-        setStatus('Şablon alanı okunuyor...');
-        const result = await Tesseract.recognize(dataUrl, 'eng');
-        const serial = extractSerial(result?.data?.text || '');
+        setStatus('Tam etiket OCR taranıyor...');
+        const result = await Tesseract.recognize(source.toDataURL('image/jpeg', 0.85), 'eng');
+        const rawText = normalizeText(result?.data?.text || '');
+        const words = result?.data?.words || [];
+        const refRegex = new RegExp(referenceConfig.referenceRegexSource);
+        const serial = extractSerialNearReference(rawText, referenceConfig.referenceText);
 
-        if (serial) {
-          const now = Date.now();
-          const repeated = serial === lastAcceptedSerial && (now - lastAcceptedAt < 3000);
-          manualInput.value = serial;
-          setResult(serial);
-          if (!repeated) {
-            lastAcceptedSerial = serial;
-            lastAcceptedAt = now;
-            setStatus('Seri numarası bulundu.');
-          } else {
-            setStatus('Aynı seri no tekrar görüldü.');
+        let matchedWordIndices = [];
+        for (let i = 0; i < words.length; i++) {
+          const w = normalizeText(words[i].text || '');
+          if (w && refRegex.test(w.replace(/\s+/g, ''))) {
+            matchedWordIndices.push(i);
           }
-        } else {
-          setResult('Uygun seri numarası bulunamadı.');
-          setStatus('Şablon alanında regexe uyan değer çıkmadı.');
         }
+
+        if (!matchedWordIndices.length) {
+          for (let i = 0; i < words.length - 1; i++) {
+            const combo = normalizeText((words[i].text || '') + (words[i+1].text || ''));
+            if (combo && refRegex.test(combo.replace(/\s+/g, ''))) {
+              matchedWordIndices = [i, i+1];
+              break;
+            }
+          }
+        }
+
+        if (matchedWordIndices.length) {
+          const boxes = matchedWordIndices.map(i => words[i].bbox || words[i].box || null).filter(Boolean);
+          if (boxes.length) {
+            const left = Math.min(...boxes.map(b => b.x0 ?? b.left ?? 0));
+            const top = Math.min(...boxes.map(b => b.y0 ?? b.top ?? 0));
+            const right = Math.max(...boxes.map(b => b.x1 ?? b.right ?? 0));
+            const bottom = Math.max(...boxes.map(b => b.y1 ?? b.bottom ?? 0));
+
+            const padX = Math.max(40, Math.round((right - left) * 2.8));
+            const padY = Math.max(25, Math.round((bottom - top) * 1.3));
+            const cropX = Math.max(0, left);
+            const cropY = Math.max(0, top - padY);
+            const cropW = Math.min(source.width - cropX, (right - left) + padX);
+            const cropH = Math.min(source.height - cropY, (bottom - top) + padY * 2);
+
+            cropCanvas.width = cropW;
+            cropCanvas.height = cropH;
+            cropCanvas.getContext('2d').drawImage(source, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+            enhanceForOCR(cropCanvas);
+            livePreview.src = cropCanvas.toDataURL('image/jpeg', 0.92);
+
+            const rect = mapSourceToOverlayRect(cropX, cropY, cropW, cropH, source);
+            drawMatchBox(rect);
+
+            if (serial) {
+              const now = Date.now();
+              const repeated = serial === lastAcceptedSerial && (now - lastAcceptedAt < 3000);
+              manualInput.value = serial;
+              setResult(serial);
+              if (!repeated) {
+                lastAcceptedSerial = serial;
+                lastAcceptedAt = now;
+                setStatus('Referans bulundu, seri numarası çıkarıldı.');
+              } else {
+                setStatus('Aynı seri no tekrar görüldü.');
+              }
+            } else {
+              setResult('Referans bulundu ama seri no çıkarılamadı.');
+              setStatus('Regexe uygun seri no bulunamadı.');
+            }
+
+            setDebug(`ref:${referenceConfig.referenceText} | words:${words.length} | text:${rawText.slice(0,120)}`);
+            return;
+          }
+        }
+
+        matchBox.style.display = 'none';
+        setResult('Referans metni bulunamadı.');
+        setStatus('Sistemin aradığı referans görünmedi veya OCR farklı okudu.');
+        setDebug(`ref:${referenceConfig.referenceText} | text:${rawText.slice(0,120)}`);
       } catch (err) {
         setStatus('OCR hatası: ' + err.message);
       } finally {
@@ -475,8 +567,8 @@
     }
 
     function startAutoMode() {
-      if (!template) {
-        setStatus('Önce şablon öğretmen gerekiyor.');
+      if (!referenceConfig || !referenceConfig.referenceText) {
+        setStatus('Önce referans öğretmen gerekiyor.');
         return;
       }
       if (!video.srcObject) {
@@ -488,7 +580,7 @@
       setAutoBadge();
       setStatus('Canlı okuma başladı.');
       runLiveRead();
-      autoTimer = setInterval(runLiveRead, 1800);
+      autoTimer = setInterval(runLiveRead, 2200);
     }
 
     function stopAutoMode() {
@@ -498,6 +590,7 @@
         clearInterval(autoTimer);
         autoTimer = null;
       }
+      matchBox.style.display = 'none';
     }
 
     function renderTable() {
@@ -516,7 +609,7 @@
     }
 
     function saveRecords() {
-      localStorage.setItem('serial_records_template_v1', JSON.stringify(records));
+      localStorage.setItem('serial_records_reference_v1', JSON.stringify(records));
     }
 
     function addRecord() {
@@ -577,7 +670,7 @@
     window.deleteRecord = deleteRecord;
     document.getElementById('startBtn').addEventListener('click', startCamera);
     document.getElementById('teachShotBtn').addEventListener('click', takeTeachShot);
-    document.getElementById('saveTemplateBtn').addEventListener('click', saveTemplateFromSelection);
+    document.getElementById('learnRefBtn').addEventListener('click', learnReferenceFromSelection);
     document.getElementById('liveReadBtn').addEventListener('click', startAutoMode);
     document.getElementById('pauseBtn').addEventListener('click', () => { stopAutoMode(); setStatus('Canlı okuma duraklatıldı.'); });
     document.getElementById('stopBtn').addEventListener('click', stopCamera);
@@ -586,8 +679,11 @@
     document.getElementById('exportBtn').addEventListener('click', exportCSV);
 
     setGuideDefault();
-    setTemplateBadge();
+    setReferenceBadge();
     setAutoBadge();
+    if (referenceConfig && referenceConfig.referenceText) {
+      referenceInput.value = referenceConfig.referenceText;
+    }
     renderTable();
   </script>
 </body>
