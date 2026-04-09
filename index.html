@@ -3,68 +3,73 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Seri No Okuyucu - Otomatik</title>
+  <title>Seri No Okuyucu - Şablon Öğretmeli</title>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     :root{
       --bg:#f4f7fb; --card:#fff; --text:#1f2937; --muted:#6b7280; --line:#dbe3ee;
-      --accent:#0f766e; --danger:#dc2626; --ok:#166534; --warn:#92400e;
+      --accent:#0f766e; --danger:#dc2626; --ok:#166534; --info:#0369a1;
     }
     *{box-sizing:border-box}
     body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
-    .wrap{max-width:1080px;margin:0 auto;padding:16px}
+    .wrap{max-width:1120px;margin:0 auto;padding:16px}
     .title{font-size:24px;font-weight:700;margin:4px 0 8px}
     .sub{color:var(--muted);margin-bottom:16px;line-height:1.45}
-    .grid{display:grid;grid-template-columns:1.25fr .75fr;gap:16px}
+    .grid{display:grid;grid-template-columns:1.2fr .8fr;gap:16px}
     .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:0 10px 24px rgba(15,23,42,.05)}
-    .camera-shell{position:relative;width:100%;overflow:hidden;border-radius:14px;background:#111827;aspect-ratio:3/4}
+    .camera-shell{position:relative;width:100%;overflow:hidden;border-radius:14px;background:#111827;aspect-ratio:3/4;touch-action:none}
     video,img,canvas{width:100%;display:block;background:#111827}
-    .camera-shell video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+    .camera-shell video,.camera-shell img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
     .overlay{position:absolute;inset:0;pointer-events:none}
-    .scan-box{position:absolute;border:3px solid rgba(34,197,94,.95);border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,.42);left:50%;top:50%;transform:translate(-50%,-50%)}
-    .scan-label{position:absolute;left:50%;top:calc(50% - 12px);transform:translate(-50%, calc(-100% - 6px));background:rgba(34,197,94,.92);color:#fff;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
+    .guide-box{position:absolute;border:3px solid rgba(34,197,94,.95);border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,.38)}
+    .guide-label{position:absolute;background:rgba(34,197,94,.92);color:#fff;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
+    .select-box{position:absolute;border:3px dashed rgba(14,165,233,.98);background:rgba(14,165,233,.12);border-radius:10px;display:none}
     .controls{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
     button{border:none;border-radius:12px;padding:12px 14px;font-size:15px;font-weight:600;cursor:pointer}
     .primary{background:var(--accent);color:#fff}.secondary{background:#e6f4f1;color:var(--accent)}
-    .info{background:#e8f5fd;color:#0369a1}.danger{background:#fee2e2;color:var(--danger)}.ghost{background:#f3f4f6;color:#111827}
+    .info{background:#e8f5fd;color:var(--info)}.danger{background:#fee2e2;color:var(--danger)}.ghost{background:#f3f4f6;color:#111827}
     input{width:100%;border:1px solid var(--line);border-radius:12px;padding:12px;font-size:15px;margin-top:8px;background:#fff}
-    input[type="range"]{padding:0}
     label{display:block;font-size:14px;color:#374151;margin-top:12px;font-weight:600}
-    .status{margin-top:10px;padding:10px 12px;border-radius:12px;background:#f8fafc;border:1px solid var(--line);color:#334155;min-height:44px;line-height:1.4}
+    .status,.notebox{margin-top:10px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);line-height:1.4}
+    .status{background:#f8fafc;color:#334155;min-height:44px}
+    .notebox{background:#eff6ff;color:#1e3a8a}
     .result{font-size:18px;font-weight:700;margin-top:10px;padding:12px;border-radius:12px;background:#f0fdf4;border:1px solid #bbf7d0;color:var(--ok);word-break:break-word}
     .small{font-size:13px;color:var(--muted);line-height:1.45}
-    .split2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-    .range-value,.debug{font-size:12px;color:#64748b;margin-top:4px}
     .badge{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700}
     .badge-ok{background:#ecfdf5;color:#166534}
     .badge-warn{background:#fff7ed;color:#92400e}
+    .badge-info{background:#eff6ff;color:#1d4ed8}
     table{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px}
     th,td{border-bottom:1px solid var(--line);padding:10px 8px;text-align:left;vertical-align:top}
     th{background:#f8fafc}
     .row-actions{display:flex;gap:8px;flex-wrap:wrap}
-    .preview-box{margin-top:12px}
+    .preview-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
     .pill{display:inline-block;font-size:12px;font-weight:700;padding:6px 8px;border-radius:999px;background:#eef2ff;color:#4338ca;margin-bottom:8px}
     .hidden-canvas{display:none}
-    @media (max-width:860px){.grid{grid-template-columns:1fr}}
+    .debug{margin-top:8px;font-size:12px;color:#64748b}
+    @media (max-width:900px){.grid{grid-template-columns:1fr}.preview-grid{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="title">Seri Numarası Okuyucu</div>
     <div class="sub">
-      Kamera açık kalır. Çerçeve içine etiketi getirince sistem belirlediğin ön ek metni
-      (<b>ör. S/N:</b>) arar ve bulursa seri numarasını otomatik çıkarır.
+      Bu sürümde bir kez örnek fotoğraf çekip <b>seri numarası alanını elle seçiyorsun</b>.
+      Sistem o alanın etiketteki <b>konum oranını</b> öğreniyor. Sonraki çekimlerde aynı etikette
+      aynı bölgeyi otomatik kırpıp seri numarasını oradan okuyor.
     </div>
 
     <div class="grid">
       <div class="card">
-        <div class="pill">1. Canlı otomatik okuma</div>
+        <div class="pill">1. Kamera ve öğretme alanı</div>
 
         <div class="camera-shell" id="cameraShell">
           <video id="video" autoplay playsinline muted></video>
+          <img id="freezeImage" style="display:none;" alt="Dondurulmuş kare" />
           <div class="overlay">
-            <div class="scan-box" id="scanBox"></div>
-            <div class="scan-label">Etiketi bu alana getir</div>
+            <div class="guide-box" id="guideBox"></div>
+            <div class="guide-label" id="guideLabel">Etiketi bu alana getir</div>
+            <div class="select-box" id="selectBox"></div>
           </div>
         </div>
 
@@ -73,35 +78,19 @@
 
         <div class="controls">
           <button class="primary" id="startBtn">Kamerayı Aç</button>
-          <button class="secondary" id="autoBtn">Otomatik Okumayı Başlat</button>
+          <button class="secondary" id="teachShotBtn">Örnek Fotoğraf Çek</button>
+          <button class="info" id="saveTemplateBtn">Seçimi Şablon Olarak Kaydet</button>
+          <button class="secondary" id="liveReadBtn">Canlı Okumayı Başlat</button>
           <button class="ghost" id="pauseBtn">Duraklat</button>
           <button class="danger" id="stopBtn">Kamerayı Kapat</button>
         </div>
 
         <div class="controls">
-          <span class="badge badge-warn" id="autoState">Otomatik okuma kapalı</span>
+          <span class="badge badge-warn" id="templateState">Şablon yok</span>
+          <span class="badge badge-warn" id="autoState">Canlı okuma kapalı</span>
         </div>
 
-        <div class="split2">
-          <div>
-            <label for="boxWidth">Çerçeve genişliği</label>
-            <input id="boxWidth" type="range" min="40" max="90" value="78" />
-            <div class="range-value" id="boxWidthVal">%78</div>
-          </div>
-          <div>
-            <label for="boxHeight">Çerçeve yüksekliği</label>
-            <input id="boxHeight" type="range" min="10" max="45" value="18" />
-            <div class="range-value" id="boxHeightVal">%18</div>
-          </div>
-        </div>
-
-        <label for="prefixInput">Aranacak ön ek metin</label>
-        <input id="prefixInput" value="S/N:" placeholder="Örn: S/N:" />
-        <div class="small">
-          Sistem önce bu metni arar. Metni görmeden seri noyu kabul etmez.
-        </div>
-
-        <label for="regexInput">Seri numarası filtresi (prefix sonrası uygulanır)</label>
+        <label for="regexInput">Seri numarası filtresi</label>
         <input id="regexInput" value="[A-Z0-9\\-]{4,}" />
         <div class="small">
           Örnek: <b>[A-Z]{2}[0-9]{8}</b> veya <b>[0-9]{10}</b>
@@ -115,11 +104,21 @@
 
         <div class="result" id="resultBox">Henüz okunmadı.</div>
         <div class="status" id="statusBox">Hazır.</div>
+        <div class="notebox">
+          Öğretme akışı: <b>Örnek Fotoğraf Çek</b> → mavi kutuyla seri no alanını sürükleyip seç →
+          <b>Seçimi Şablon Olarak Kaydet</b> → <b>Canlı Okumayı Başlat</b>
+        </div>
         <div class="debug" id="debugBox"></div>
 
-        <div class="preview-box">
-          <label>Kırpılan alan önizlemesi</label>
-          <img id="preview" alt="Kırpılmış önizleme" />
+        <div class="preview-grid">
+          <div>
+            <label>Örnekte seçilen alan</label>
+            <img id="templatePreview" alt="Şablon önizleme" />
+          </div>
+          <div>
+            <label>Son otomatik okuma alanı</label>
+            <img id="livePreview" alt="Canlı okuma önizleme" />
+          </div>
         </div>
       </div>
 
@@ -146,8 +145,8 @@
         </table>
 
         <div class="small" style="margin-top:10px;">
-          Aynı seri numarası peş peşe tekrar okunursa otomatik kaydetmez.
-          İstersen sonraki adımda “görür görmez otomatik listeye ekle” de yaparız.
+          Bu yaklaşım, ön ek aramaktan daha stabildir. Etiket düzeni benzer kaldığı sürece
+          sistem hep aynı yeri okur.
         </div>
       </div>
     </div>
@@ -155,55 +154,72 @@
 
   <script>
     const video = document.getElementById('video');
+    const freezeImage = document.getElementById('freezeImage');
     const fullCanvas = document.getElementById('fullCanvas');
     const cropCanvas = document.getElementById('cropCanvas');
-    const preview = document.getElementById('preview');
+    const templatePreview = document.getElementById('templatePreview');
+    const livePreview = document.getElementById('livePreview');
     const resultBox = document.getElementById('resultBox');
     const statusBox = document.getElementById('statusBox');
     const debugBox = document.getElementById('debugBox');
     const manualInput = document.getElementById('manualInput');
     const noteInput = document.getElementById('noteInput');
     const regexInput = document.getElementById('regexInput');
-    const prefixInput = document.getElementById('prefixInput');
     const recordsTableBody = document.querySelector('#recordsTable tbody');
     const cameraShell = document.getElementById('cameraShell');
-    const scanBox = document.getElementById('scanBox');
-    const boxWidth = document.getElementById('boxWidth');
-    const boxHeight = document.getElementById('boxHeight');
-    const boxWidthVal = document.getElementById('boxWidthVal');
-    const boxHeightVal = document.getElementById('boxHeightVal');
+    const guideBox = document.getElementById('guideBox');
+    const guideLabel = document.getElementById('guideLabel');
+    const selectBox = document.getElementById('selectBox');
+    const templateState = document.getElementById('templateState');
     const autoState = document.getElementById('autoState');
 
     let stream = null;
-    let records = JSON.parse(localStorage.getItem('serial_records_auto_v1') || '[]');
+    let frozenImageDataUrl = '';
+    let template = JSON.parse(localStorage.getItem('serial_template_v1') || 'null');
+    let records = JSON.parse(localStorage.getItem('serial_records_template_v1') || '[]');
+
+    let teachMode = false;
     let autoMode = false;
-    let isScanning = false;
     let autoTimer = null;
+    let ocrBusy = false;
     let lastAcceptedSerial = '';
     let lastAcceptedAt = 0;
-    let ocrWorkerBusy = false;
 
-    function setStatus(msg) { statusBox.textContent = msg; }
-    function setResult(msg) { resultBox.textContent = msg; }
-    function setDebug(msg) { debugBox.textContent = msg || ''; }
+    let selection = null;
+    let dragStart = null;
 
-    function updateScanBox() {
-      const w = Number(boxWidth.value);
-      const h = Number(boxHeight.value);
-      scanBox.style.width = w + '%';
-      scanBox.style.height = h + '%';
-      boxWidthVal.textContent = '%' + w;
-      boxHeightVal.textContent = '%' + h;
+    function setStatus(msg){ statusBox.textContent = msg; }
+    function setResult(msg){ resultBox.textContent = msg; }
+    function setDebug(msg){ debugBox.textContent = msg || ''; }
+
+    function setTemplateBadge() {
+      if (template) {
+        templateState.textContent = 'Şablon hazır';
+        templateState.className = 'badge badge-ok';
+      } else {
+        templateState.textContent = 'Şablon yok';
+        templateState.className = 'badge badge-warn';
+      }
     }
 
     function setAutoBadge() {
       if (autoMode) {
-        autoState.textContent = 'Otomatik okuma açık';
+        autoState.textContent = 'Canlı okuma açık';
         autoState.className = 'badge badge-ok';
       } else {
-        autoState.textContent = 'Otomatik okuma kapalı';
+        autoState.textContent = 'Canlı okuma kapalı';
         autoState.className = 'badge badge-warn';
       }
+    }
+
+    function setGuideDefault() {
+      guideBox.style.left = '10%';
+      guideBox.style.top = '18%';
+      guideBox.style.width = '80%';
+      guideBox.style.height = '64%';
+      guideLabel.style.left = '50%';
+      guideLabel.style.top = 'calc(18% - 10px)';
+      guideLabel.style.transform = 'translate(-50%, -100%)';
     }
 
     async function startCamera() {
@@ -218,7 +234,11 @@
           audio: false
         });
         video.srcObject = stream;
-        setStatus('Kamera açık. Etiketi çerçeve içine getir.');
+        video.style.display = 'block';
+        freezeImage.style.display = 'none';
+        teachMode = false;
+        selectBox.style.display = 'none';
+        setStatus('Kamera açık.');
       } catch (err) {
         setStatus('Kamera açılamadı: ' + err.message);
       }
@@ -227,68 +247,98 @@
     function stopCamera() {
       stopAutoMode();
       if (stream) {
-        stream.getTracks().forEach(track => track.stop());
+        stream.getTracks().forEach(t => t.stop());
         stream = null;
         video.srcObject = null;
       }
       setStatus('Kamera kapatıldı.');
     }
 
-    function getDisplayedVideoMetrics() {
+    function getDisplayedMetrics() {
       const shellW = cameraShell.clientWidth;
       const shellH = cameraShell.clientHeight;
-      const videoW = video.videoWidth;
-      const videoH = video.videoHeight;
-      const scale = Math.max(shellW / videoW, shellH / videoH);
-      const displayedW = videoW * scale;
-      const displayedH = videoH * scale;
+      const srcW = video.style.display !== 'none' ? video.videoWidth : fullCanvas.width;
+      const srcH = video.style.display !== 'none' ? video.videoHeight : fullCanvas.height;
+      const scale = Math.max(shellW / srcW, shellH / srcH);
+      const displayedW = srcW * scale;
+      const displayedH = srcH * scale;
       const offsetX = (shellW - displayedW) / 2;
       const offsetY = (shellH - displayedH) / 2;
-      return { shellW, shellH, videoW, videoH, scale, displayedW, displayedH, offsetX, offsetY };
+      return { shellW, shellH, srcW, srcH, scale, offsetX, offsetY };
     }
 
-    function captureScanArea() {
-      const videoW = video.videoWidth;
-      const videoH = video.videoHeight;
-      if (!video.srcObject || !videoW || !videoH) return null;
-
-      const shellRect = cameraShell.getBoundingClientRect();
-      const boxRect = scanBox.getBoundingClientRect();
-      const metrics = getDisplayedVideoMetrics();
-
-      const boxXInShell = boxRect.left - shellRect.left;
-      const boxYInShell = boxRect.top - shellRect.top;
-      const boxWInShell = boxRect.width;
-      const boxHInShell = boxRect.height;
-
-      const sx = Math.round((boxXInShell - metrics.offsetX) / metrics.scale);
-      const sy = Math.round((boxYInShell - metrics.offsetY) / metrics.scale);
-      const sw = Math.round(boxWInShell / metrics.scale);
-      const sh = Math.round(boxHInShell / metrics.scale);
-
-      const safeSx = Math.max(0, sx);
-      const safeSy = Math.max(0, sy);
-      const safeSw = Math.min(videoW - safeSx, sw);
-      const safeSh = Math.min(videoH - safeSy, sh);
-
-      if (safeSw <= 0 || safeSh <= 0) return null;
-
-      fullCanvas.width = videoW;
-      fullCanvas.height = videoH;
-      const fullCtx = fullCanvas.getContext('2d');
-      fullCtx.drawImage(video, 0, 0, videoW, videoH);
-
-      cropCanvas.width = safeSw;
-      cropCanvas.height = safeSh;
-      const cropCtx = cropCanvas.getContext('2d');
-      cropCtx.drawImage(fullCanvas, safeSx, safeSy, safeSw, safeSh, 0, 0, safeSw, safeSh);
-
-      enhanceForOCR(cropCanvas);
-      const dataUrl = cropCanvas.toDataURL('image/jpeg', 0.9);
-      preview.src = dataUrl;
-      setDebug(`src x:${safeSx} y:${safeSy} w:${safeSw} h:${safeSh}`);
-      return dataUrl;
+    function drawSelectionBox(sel) {
+      selectBox.style.display = 'block';
+      selectBox.style.left = sel.x + 'px';
+      selectBox.style.top = sel.y + 'px';
+      selectBox.style.width = sel.w + 'px';
+      selectBox.style.height = sel.h + 'px';
     }
+
+    function takeTeachShot() {
+      if (!video.srcObject || !video.videoWidth || !video.videoHeight) {
+        setStatus('Önce kamerayı aç.');
+        return;
+      }
+      fullCanvas.width = video.videoWidth;
+      fullCanvas.height = video.videoHeight;
+      fullCanvas.getContext('2d').drawImage(video, 0, 0, fullCanvas.width, fullCanvas.height);
+      frozenImageDataUrl = fullCanvas.toDataURL('image/jpeg', 0.95);
+
+      freezeImage.src = frozenImageDataUrl;
+      freezeImage.style.display = 'block';
+      video.style.display = 'none';
+
+      teachMode = true;
+      selection = null;
+      selectBox.style.display = 'none';
+      setStatus('Örnek fotoğraf çekildi. Mavi kutu ile seri no alanını seç.');
+    }
+
+    function clamp(v, min, max) {
+      return Math.max(min, Math.min(max, v));
+    }
+
+    function pointerPos(e) {
+      const rect = cameraShell.getBoundingClientRect();
+      const x = clamp(e.clientX - rect.left, 0, rect.width);
+      const y = clamp(e.clientY - rect.top, 0, rect.height);
+      return { x, y, rect };
+    }
+
+    cameraShell.addEventListener('pointerdown', (e) => {
+      if (!teachMode) return;
+      const p = pointerPos(e);
+      dragStart = { x: p.x, y: p.y };
+      selection = { x: p.x, y: p.y, w: 0, h: 0 };
+      drawSelectionBox(selection);
+    });
+
+    cameraShell.addEventListener('pointermove', (e) => {
+      if (!teachMode || !dragStart) return;
+      const p = pointerPos(e);
+      const x = Math.min(dragStart.x, p.x);
+      const y = Math.min(dragStart.y, p.y);
+      const w = Math.abs(p.x - dragStart.x);
+      const h = Math.abs(p.y - dragStart.y);
+      selection = { x, y, w, h };
+      drawSelectionBox(selection);
+    });
+
+    function finishSelection() {
+      if (!teachMode || !dragStart) return;
+      dragStart = null;
+      if (!selection || selection.w < 15 || selection.h < 10) {
+        selection = null;
+        selectBox.style.display = 'none';
+        setStatus('Seçim çok küçük. Tekrar seç.');
+        return;
+      }
+      setStatus('Seçim hazır. Şimdi "Seçimi Şablon Olarak Kaydet"e bas.');
+    }
+
+    cameraShell.addEventListener('pointerup', finishSelection);
+    cameraShell.addEventListener('pointercancel', finishSelection);
 
     function enhanceForOCR(canvas) {
       const ctx = canvas.getContext('2d');
@@ -303,86 +353,132 @@
       ctx.putImageData(img, 0, 0);
     }
 
-    function normalizeText(s) {
-      return String(s || '')
+    function saveTemplateFromSelection() {
+      if (!teachMode || !selection) {
+        setStatus('Önce örnek fotoğrafta bir alan seç.');
+        return;
+      }
+      const shellW = cameraShell.clientWidth;
+      const shellH = cameraShell.clientHeight;
+      template = {
+        xRatio: selection.x / shellW,
+        yRatio: selection.y / shellH,
+        wRatio: selection.w / shellW,
+        hRatio: selection.h / shellH
+      };
+      localStorage.setItem('serial_template_v1', JSON.stringify(template));
+      setTemplateBadge();
+
+      const crop = cropFromRatios(fullCanvas, template);
+      if (crop) {
+        enhanceForOCR(crop);
+        templatePreview.src = crop.toDataURL('image/jpeg', 0.95);
+      }
+
+      teachMode = false;
+      freezeImage.style.display = 'none';
+      video.style.display = 'block';
+      selectBox.style.display = 'none';
+      setStatus('Şablon kaydedildi. Artık canlı okumayı başlatabilirsin.');
+    }
+
+    function cropFromRatios(sourceCanvas, ratios) {
+      const sx = Math.round(sourceCanvas.width * ratios.xRatio);
+      const sy = Math.round(sourceCanvas.height * ratios.yRatio);
+      const sw = Math.round(sourceCanvas.width * ratios.wRatio);
+      const sh = Math.round(sourceCanvas.height * ratios.hRatio);
+
+      if (sw <= 0 || sh <= 0) return null;
+
+      const safeSx = Math.max(0, sx);
+      const safeSy = Math.max(0, sy);
+      const safeSw = Math.min(sourceCanvas.width - safeSx, sw);
+      const safeSh = Math.min(sourceCanvas.height - safeSy, sh);
+
+      cropCanvas.width = safeSw;
+      cropCanvas.height = safeSh;
+      cropCanvas.getContext('2d').drawImage(sourceCanvas, safeSx, safeSy, safeSw, safeSh, 0, 0, safeSw, safeSh);
+      return cropCanvas;
+    }
+
+    function captureCurrentFrameToCanvas() {
+      if (!video.srcObject || !video.videoWidth || !video.videoHeight) return null;
+      fullCanvas.width = video.videoWidth;
+      fullCanvas.height = video.videoHeight;
+      fullCanvas.getContext('2d').drawImage(video, 0, 0, fullCanvas.width, fullCanvas.height);
+      return fullCanvas;
+    }
+
+    function extractSerial(rawText) {
+      const text = String(rawText || '')
         .toUpperCase()
+        .replace(/\r/g, '\n')
+        .split('\n')
+        .map(x => x.trim())
+        .filter(Boolean)
+        .join(' ')
         .replace(/\s+/g, ' ')
         .trim();
-    }
-
-    function escapeRegex(text) {
-      return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    }
-
-    function extractSerialAfterPrefix(rawText) {
-      const text = normalizeText(rawText);
-      const prefix = normalizeText(prefixInput.value);
-
-      if (!prefix) {
-        return { serial: '', reason: 'Ön ek boş.' };
-      }
-
-      const prefixRegex = new RegExp(escapeRegex(prefix).replace(/\s+/g, '\\s*'));
-      const prefixMatch = text.match(prefixRegex);
-
-      if (!prefixMatch) {
-        return { serial: '', reason: 'Ön ek bulunamadı.' };
-      }
-
-      const afterPrefix = text.slice(prefixMatch.index + prefixMatch[0].length).trim();
-      const shortArea = afterPrefix.slice(0, 40);
 
       try {
-        const serialRegex = new RegExp(regexInput.value);
-        const m = shortArea.match(serialRegex);
-        if (m && m[0]) {
-          return { serial: m[0].replace(/\s+/g, ''), reason: 'Bulundu.' };
+        const re = new RegExp(regexInput.value, 'g');
+        const matches = text.match(re);
+        if (matches && matches.length) {
+          matches.sort((a, b) => b.length - a.length);
+          return matches[0].replace(/\s+/g, '');
         }
       } catch (e) {
-        return { serial: '', reason: 'Regex hatalı.' };
+        return '';
       }
-
-      return { serial: '', reason: 'Prefix bulundu ama seri no filtresi eşleşmedi.' };
+      return '';
     }
 
-    async function runSingleAutoScan() {
-      if (!autoMode || ocrWorkerBusy || !video.srcObject) return;
-      const image = captureScanArea();
-      if (!image) return;
+    async function runLiveRead() {
+      if (!autoMode || ocrBusy || !template) return;
+      const source = captureCurrentFrameToCanvas();
+      if (!source) return;
 
-      ocrWorkerBusy = true;
+      const crop = cropFromRatios(source, template);
+      if (!crop) return;
+
+      enhanceForOCR(crop);
+      const dataUrl = crop.toDataURL('image/jpeg', 0.92);
+      livePreview.src = dataUrl;
+
+      ocrBusy = true;
       try {
-        setStatus('Çerçeve içi otomatik taranıyor...');
-        const result = await Tesseract.recognize(image, 'eng');
-        const rawText = result?.data?.text || '';
-        const parsed = extractSerialAfterPrefix(rawText);
+        setStatus('Şablon alanı okunuyor...');
+        const result = await Tesseract.recognize(dataUrl, 'eng');
+        const serial = extractSerial(result?.data?.text || '');
 
-        if (parsed.serial) {
+        if (serial) {
           const now = Date.now();
-          const repeated = parsed.serial === lastAcceptedSerial && (now - lastAcceptedAt < 3000);
-
-          manualInput.value = parsed.serial;
-          setResult(parsed.serial);
-
+          const repeated = serial === lastAcceptedSerial && (now - lastAcceptedAt < 3000);
+          manualInput.value = serial;
+          setResult(serial);
           if (!repeated) {
-            lastAcceptedSerial = parsed.serial;
+            lastAcceptedSerial = serial;
             lastAcceptedAt = now;
             setStatus('Seri numarası bulundu.');
           } else {
-            setStatus('Aynı seri no tekrar görüldü, yeniden kabul edilmedi.');
+            setStatus('Aynı seri no tekrar görüldü.');
           }
         } else {
           setResult('Uygun seri numarası bulunamadı.');
-          setStatus(parsed.reason);
+          setStatus('Şablon alanında regexe uyan değer çıkmadı.');
         }
       } catch (err) {
         setStatus('OCR hatası: ' + err.message);
       } finally {
-        ocrWorkerBusy = false;
+        ocrBusy = false;
       }
     }
 
     function startAutoMode() {
+      if (!template) {
+        setStatus('Önce şablon öğretmen gerekiyor.');
+        return;
+      }
       if (!video.srcObject) {
         setStatus('Önce kamerayı aç.');
         return;
@@ -390,9 +486,9 @@
       if (autoMode) return;
       autoMode = true;
       setAutoBadge();
-      setStatus('Otomatik okuma başladı.');
-      runSingleAutoScan();
-      autoTimer = setInterval(runSingleAutoScan, 1800);
+      setStatus('Canlı okuma başladı.');
+      runLiveRead();
+      autoTimer = setInterval(runLiveRead, 1800);
     }
 
     function stopAutoMode() {
@@ -420,7 +516,7 @@
     }
 
     function saveRecords() {
-      localStorage.setItem('serial_records_auto_v1', JSON.stringify(records));
+      localStorage.setItem('serial_records_template_v1', JSON.stringify(records));
     }
 
     function addRecord() {
@@ -479,21 +575,18 @@
     }
 
     window.deleteRecord = deleteRecord;
-
     document.getElementById('startBtn').addEventListener('click', startCamera);
-    document.getElementById('autoBtn').addEventListener('click', startAutoMode);
-    document.getElementById('pauseBtn').addEventListener('click', () => {
-      stopAutoMode();
-      setStatus('Otomatik okuma duraklatıldı.');
-    });
+    document.getElementById('teachShotBtn').addEventListener('click', takeTeachShot);
+    document.getElementById('saveTemplateBtn').addEventListener('click', saveTemplateFromSelection);
+    document.getElementById('liveReadBtn').addEventListener('click', startAutoMode);
+    document.getElementById('pauseBtn').addEventListener('click', () => { stopAutoMode(); setStatus('Canlı okuma duraklatıldı.'); });
     document.getElementById('stopBtn').addEventListener('click', stopCamera);
     document.getElementById('saveBtn').addEventListener('click', addRecord);
     document.getElementById('clearBtn').addEventListener('click', clearRecords);
     document.getElementById('exportBtn').addEventListener('click', exportCSV);
-    boxWidth.addEventListener('input', updateScanBox);
-    boxHeight.addEventListener('input', updateScanBox);
 
-    updateScanBox();
+    setGuideDefault();
+    setTemplateBadge();
     setAutoBadge();
     renderTable();
   </script>
