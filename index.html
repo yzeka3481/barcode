@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Seri No Okuyucu</title>
+  <title>Seri No Okuyucu - Çerçeveli</title>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <style>
     :root{
@@ -13,169 +13,95 @@
       --muted:#6b7280;
       --line:#dbe3ee;
       --accent:#0f766e;
-      --accent2:#0ea5e9;
       --danger:#dc2626;
+      --ok:#166534;
     }
     *{box-sizing:border-box}
-    body{
-      margin:0;
-      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
-      background:var(--bg);
-      color:var(--text);
-    }
-    .wrap{
-      max-width:980px;
-      margin:0 auto;
-      padding:16px;
-    }
-    .title{
-      font-size:24px;
-      font-weight:700;
-      margin:4px 0 8px;
-    }
-    .sub{
-      color:var(--muted);
-      margin-bottom:16px;
-      line-height:1.4;
-    }
-    .grid{
-      display:grid;
-      grid-template-columns:1.2fr .8fr;
-      gap:16px;
-    }
-    .card{
-      background:var(--card);
-      border:1px solid var(--line);
-      border-radius:16px;
-      padding:14px;
-      box-shadow:0 10px 24px rgba(15,23,42,.05);
-    }
-    video, canvas, img{
-      width:100%;
-      border-radius:12px;
-      background:#111827;
-    }
-    .controls{
-      display:flex;
-      flex-wrap:wrap;
-      gap:10px;
-      margin-top:12px;
-    }
-    button{
-      border:none;
-      border-radius:12px;
-      padding:12px 14px;
-      font-size:15px;
-      font-weight:600;
-      cursor:pointer;
-    }
-    .primary{background:var(--accent); color:#fff;}
-    .secondary{background:#e6f4f1; color:var(--accent);}
-    .info{background:#e8f5fd; color:#0369a1;}
-    .danger{background:#fee2e2; color:var(--danger);}
-    .ghost{background:#f3f4f6; color:#111827;}
-    input, textarea, select{
-      width:100%;
-      border:1px solid var(--line);
-      border-radius:12px;
-      padding:12px;
-      font-size:15px;
-      margin-top:8px;
-      background:#fff;
-    }
-    label{
-      display:block;
-      font-size:14px;
-      color:#374151;
-      margin-top:12px;
-      font-weight:600;
-    }
-    .status{
-      margin-top:10px;
-      padding:10px 12px;
-      border-radius:12px;
-      background:#f8fafc;
-      border:1px solid var(--line);
-      color:#334155;
-      min-height:44px;
-      line-height:1.4;
-    }
-    .result{
-      font-size:18px;
-      font-weight:700;
-      margin-top:10px;
-      padding:12px;
-      border-radius:12px;
-      background:#f0fdf4;
-      border:1px solid #bbf7d0;
-      word-break:break-word;
-    }
-    .small{
-      font-size:13px;
-      color:var(--muted);
-      line-height:1.4;
-    }
-    table{
-      width:100%;
-      border-collapse:collapse;
-      margin-top:12px;
-      font-size:14px;
-    }
-    th, td{
-      border-bottom:1px solid var(--line);
-      padding:10px 8px;
-      text-align:left;
-      vertical-align:top;
-    }
+    body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+    .wrap{max-width:1040px;margin:0 auto;padding:16px}
+    .title{font-size:24px;font-weight:700;margin:4px 0 8px}
+    .sub{color:var(--muted);margin-bottom:16px;line-height:1.45}
+    .grid{display:grid;grid-template-columns:1.25fr .75fr;gap:16px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:0 10px 24px rgba(15,23,42,.05)}
+    .camera-shell{position:relative;width:100%;overflow:hidden;border-radius:14px;background:#111827;aspect-ratio:3/4}
+    video, canvas, img{width:100%;display:block;border-radius:12px;background:#111827}
+    .camera-shell video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:0}
+    .overlay{position:absolute;inset:0;pointer-events:none}
+    .scan-box{position:absolute;border:3px solid rgba(34,197,94,.95);border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,.42);left:50%;top:50%;transform:translate(-50%,-50%)}
+    .scan-label{position:absolute;left:50%;top:calc(50% - 12px);transform:translate(-50%, calc(-100% - 6px));background:rgba(34,197,94,.92);color:white;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
+    .controls{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+    button{border:none;border-radius:12px;padding:12px 14px;font-size:15px;font-weight:600;cursor:pointer}
+    .primary{background:var(--accent);color:#fff}
+    .secondary{background:#e6f4f1;color:var(--accent)}
+    .info{background:#e8f5fd;color:#0369a1}
+    .danger{background:#fee2e2;color:var(--danger)}
+    .ghost{background:#f3f4f6;color:#111827}
+    input, textarea, select{width:100%;border:1px solid var(--line);border-radius:12px;padding:12px;font-size:15px;margin-top:8px;background:#fff}
+    input[type="range"]{padding:0}
+    label{display:block;font-size:14px;color:#374151;margin-top:12px;font-weight:600}
+    .status{margin-top:10px;padding:10px 12px;border-radius:12px;background:#f8fafc;border:1px solid var(--line);color:#334155;min-height:44px;line-height:1.4}
+    .result{font-size:18px;font-weight:700;margin-top:10px;padding:12px;border-radius:12px;background:#f0fdf4;border:1px solid #bbf7d0;color:var(--ok);word-break:break-word}
+    .small{font-size:13px;color:var(--muted);line-height:1.45}
+    .split2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .range-value{font-size:13px;color:#475569;margin-top:4px}
+    table{width:100%;border-collapse:collapse;margin-top:12px;font-size:14px}
+    th, td{border-bottom:1px solid var(--line);padding:10px 8px;text-align:left;vertical-align:top}
     th{background:#f8fafc}
-    .row-actions{
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-    }
-    .preview-box{
-      margin-top:12px;
-    }
-    .pill{
-      display:inline-block;
-      font-size:12px;
-      font-weight:700;
-      padding:6px 8px;
-      border-radius:999px;
-      background:#eef2ff;
-      color:#4338ca;
-      margin-bottom:8px;
-    }
-    @media (max-width: 860px){
-      .grid{grid-template-columns:1fr}
-    }
+    .row-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .preview-box{margin-top:12px}
+    .pill{display:inline-block;font-size:12px;font-weight:700;padding:6px 8px;border-radius:999px;background:#eef2ff;color:#4338ca;margin-bottom:8px}
+    .hidden-canvas{display:none}
+    @media (max-width: 860px){.grid{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
   <div class="wrap">
     <div class="title">Seri Numarası Okuyucu</div>
     <div class="sub">
-      Telefon kamerasını açar, görüntüden seri numarasını OCR ile okumaya çalışır ve listeye kaydeder.
-      İnternet gerekir çünkü OCR kütüphanesi CDN üzerinden yüklenir.
+      Bu sürümde OCR tüm fotoğrafı değil, ekrandaki <b>yeşil okuma çerçevesinin içini</b> tarar.
+      Böylece yanlış alanları seri no sanma ihtimali daha düşer.
     </div>
 
     <div class="grid">
       <div class="card">
-        <div class="pill">1. Kamera ve okuma</div>
-        <video id="video" autoplay playsinline muted></video>
-        <canvas id="canvas" style="display:none;"></canvas>
+        <div class="pill">1. Kamera ve okuma çerçevesi</div>
+
+        <div class="camera-shell" id="cameraShell">
+          <video id="video" autoplay playsinline muted></video>
+          <div class="overlay">
+            <div class="scan-box" id="scanBox"></div>
+            <div class="scan-label">Seri noyu bu alana hizala</div>
+          </div>
+        </div>
+
+        <canvas id="fullCanvas" class="hidden-canvas"></canvas>
+        <canvas id="cropCanvas" class="hidden-canvas"></canvas>
 
         <div class="controls">
           <button class="primary" id="startBtn">Kamerayı Aç</button>
-          <button class="secondary" id="captureBtn">Fotoğraf Çek</button>
-          <button class="info" id="scanBtn">Seri No Oku</button>
+          <button class="secondary" id="captureBtn">Çerçeveyi Tara</button>
+          <button class="info" id="scanBtn">OCR Oku</button>
           <button class="danger" id="stopBtn">Kamerayı Kapat</button>
+        </div>
+
+        <div class="split2">
+          <div>
+            <label for="boxWidth">Çerçeve genişliği</label>
+            <input id="boxWidth" type="range" min="40" max="90" value="78" />
+            <div class="range-value" id="boxWidthVal">%78</div>
+          </div>
+          <div>
+            <label for="boxHeight">Çerçeve yüksekliği</label>
+            <input id="boxHeight" type="range" min="10" max="45" value="20" />
+            <div class="range-value" id="boxHeightVal">%20</div>
+          </div>
         </div>
 
         <label for="regexInput">Seri numarası filtresi (Regex)</label>
         <input id="regexInput" value="[A-Z0-9\\-]{6,}" />
         <div class="small">
-          Örnek: <b>[A-Z0-9\\-]{6,}</b> → en az 6 karakterli büyük harf/rakam/tire dizilerini yakalar.
+          Yalnızca bu kurala uyan sonuç kabul edilir. Örnek:
+          <b>[A-Z]{2}[0-9]{8}</b> veya <b>SN\\-[0-9]{6,}</b>
         </div>
 
         <label for="manualInput">Bulunan seri numarası / manuel düzeltme</label>
@@ -188,8 +114,8 @@
         <div class="status" id="statusBox">Hazır.</div>
 
         <div class="preview-box">
-          <label>Çekilen görüntü</label>
-          <img id="preview" alt="Önizleme" />
+          <label>Kırpılan okuma alanı</label>
+          <img id="preview" alt="Kırpılmış önizleme" />
         </div>
       </div>
 
@@ -216,7 +142,7 @@
         </table>
 
         <div class="small" style="margin-top:10px;">
-          Kayıtlar tarayıcıda saklanır. Sayfa kapanıp açılsa da kalır.
+          Kayıtlar tarayıcıda saklanır. Gerekirse sonra Firebase veya API'ye bağlarız.
         </div>
       </div>
     </div>
@@ -224,7 +150,8 @@
 
   <script>
     const video = document.getElementById('video');
-    const canvas = document.getElementById('canvas');
+    const fullCanvas = document.getElementById('fullCanvas');
+    const cropCanvas = document.getElementById('cropCanvas');
     const preview = document.getElementById('preview');
     const resultBox = document.getElementById('resultBox');
     const statusBox = document.getElementById('statusBox');
@@ -232,32 +159,38 @@
     const noteInput = document.getElementById('noteInput');
     const regexInput = document.getElementById('regexInput');
     const recordsTableBody = document.querySelector('#recordsTable tbody');
+    const cameraShell = document.getElementById('cameraShell');
+    const scanBox = document.getElementById('scanBox');
+    const boxWidth = document.getElementById('boxWidth');
+    const boxHeight = document.getElementById('boxHeight');
+    const boxWidthVal = document.getElementById('boxWidthVal');
+    const boxHeightVal = document.getElementById('boxHeightVal');
 
     let stream = null;
-    let capturedImageDataUrl = '';
-    let records = JSON.parse(localStorage.getItem('serial_records') || '[]');
+    let croppedImageDataUrl = '';
+    let records = JSON.parse(localStorage.getItem('serial_records_v2') || '[]');
 
-    function setStatus(msg) {
-      statusBox.textContent = msg;
-    }
+    function setStatus(msg) { statusBox.textContent = msg; }
+    function setResult(msg) { resultBox.textContent = msg; }
 
-    function setResult(msg) {
-      resultBox.textContent = msg;
+    function updateScanBox() {
+      const w = Number(boxWidth.value);
+      const h = Number(boxHeight.value);
+      scanBox.style.width = w + '%';
+      scanBox.style.height = h + '%';
+      boxWidthVal.textContent = '%' + w;
+      boxHeightVal.textContent = '%' + h;
     }
 
     async function startCamera() {
       try {
         setStatus('Kamera açılıyor...');
         stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: { ideal: 'environment' },
-            width: { ideal: 1920 },
-            height: { ideal: 1080 }
-          },
+          video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
           audio: false
         });
         video.srcObject = stream;
-        setStatus('Kamera açık.');
+        setStatus('Kamera açık. Seri numarasını yeşil kutuya hizala.');
       } catch (err) {
         setStatus('Kamera açılamadı: ' + err.message);
       }
@@ -268,15 +201,16 @@
         stream.getTracks().forEach(track => track.stop());
         stream = null;
         video.srcObject = null;
-        setStatus('Kamera kapatıldı.');
       }
+      setStatus('Kamera kapatıldı.');
     }
 
-    function captureFrame() {
+    function captureScanArea() {
       if (!video.srcObject) {
         setStatus('Önce kamerayı aç.');
         return;
       }
+
       const vw = video.videoWidth;
       const vh = video.videoHeight;
       if (!vw || !vh) {
@@ -284,14 +218,50 @@
         return;
       }
 
-      canvas.width = vw;
-      canvas.height = vh;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0, vw, vh);
+      const shellRect = cameraShell.getBoundingClientRect();
+      const boxRect = scanBox.getBoundingClientRect();
 
-      capturedImageDataUrl = canvas.toDataURL('image/jpeg', 0.95);
-      preview.src = capturedImageDataUrl;
-      setStatus('Fotoğraf çekildi.');
+      const scaleX = vw / shellRect.width;
+      const scaleY = vh / shellRect.height;
+
+      const sx = Math.max(0, Math.round((boxRect.left - shellRect.left) * scaleX));
+      const sy = Math.max(0, Math.round((boxRect.top - shellRect.top) * scaleY));
+      const sw = Math.min(vw - sx, Math.round(boxRect.width * scaleX));
+      const sh = Math.min(vh - sy, Math.round(boxRect.height * scaleY));
+
+      fullCanvas.width = vw;
+      fullCanvas.height = vh;
+      const fullCtx = fullCanvas.getContext('2d');
+      fullCtx.drawImage(video, 0, 0, vw, vh);
+
+      cropCanvas.width = sw;
+      cropCanvas.height = sh;
+      const cropCtx = cropCanvas.getContext('2d');
+      cropCtx.drawImage(fullCanvas, sx, sy, sw, sh, 0, 0, sw, sh);
+
+      enhanceForOCR(cropCanvas);
+
+      croppedImageDataUrl = cropCanvas.toDataURL('image/jpeg', 0.95);
+      preview.src = croppedImageDataUrl;
+      setStatus('Çerçeve içi görüntü alındı.');
+    }
+
+    function enhanceForOCR(canvas) {
+      const ctx = canvas.getContext('2d');
+      const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const d = img.data;
+
+      for (let i = 0; i < d.length; i += 4) {
+        const r = d[i];
+        const g = d[i + 1];
+        const b = d[i + 2];
+        let gray = 0.299 * r + 0.587 * g + 0.114 * b;
+        gray = gray > 145 ? 255 : 0;
+        d[i] = gray;
+        d[i + 1] = gray;
+        d[i + 2] = gray;
+      }
+      ctx.putImageData(img, 0, 0);
     }
 
     function extractSerialNumber(rawText) {
@@ -300,7 +270,9 @@
         .split('\n')
         .map(x => x.trim())
         .filter(Boolean)
-        .join(' ');
+        .join(' ')
+        .replace(/\s+/g, ' ')
+        .toUpperCase();
 
       try {
         const regex = new RegExp(regexInput.value, 'g');
@@ -310,7 +282,7 @@
           return matches[0];
         }
       } catch (e) {
-        setStatus('Regex hatalı. Varsayılan tarama uygulanıyor.');
+        setStatus('Regex hatalı. Varsayılan filtre denenecek.');
       }
 
       const fallback = cleaned.match(/[A-Z0-9\-]{6,}/g);
@@ -323,15 +295,16 @@
     }
 
     async function scanSerial() {
-      if (!capturedImageDataUrl) {
-        setStatus('Önce fotoğraf çek.');
+      if (!croppedImageDataUrl) {
+        setStatus('Önce "Çerçeveyi Tara" butonuna bas.');
         return;
       }
 
       try {
-        setStatus('OCR çalışıyor, biraz sürebilir...');
+        setStatus('OCR çalışıyor...');
         setResult('Okunuyor...');
-        const result = await Tesseract.recognize(capturedImageDataUrl, 'eng', {
+
+        const result = await Tesseract.recognize(croppedImageDataUrl, 'eng', {
           logger: m => {
             if (m.status) {
               const pct = m.progress ? ' %' + Math.round(m.progress * 100) : '';
@@ -349,8 +322,8 @@
           setStatus('Seri numarası bulundu.');
         } else {
           manualInput.value = '';
-          setResult('Seri numarası bulunamadı.');
-          setStatus('OCR metni okudu ama filtreye uyan değer bulunamadı.');
+          setResult('Uygun seri numarası bulunamadı.');
+          setStatus('OCR metin okudu ama filtreye uyan sonuç çıkmadı.');
         }
       } catch (err) {
         setStatus('OCR hatası: ' + err.message);
@@ -367,39 +340,28 @@
           <td>${escapeHtml(item.serial)}</td>
           <td>${escapeHtml(item.note || '')}</td>
           <td>${escapeHtml(item.date)}</td>
-          <td>
-            <div class="row-actions">
-              <button class="danger" onclick="deleteRecord(${index})">Sil</button>
-            </div>
-          </td>
+          <td><div class="row-actions"><button class="danger" onclick="deleteRecord(${index})">Sil</button></div></td>
         `;
         recordsTableBody.appendChild(tr);
       });
     }
 
     function saveRecords() {
-      localStorage.setItem('serial_records', JSON.stringify(records));
+      localStorage.setItem('serial_records_v2', JSON.stringify(records));
     }
 
     function addRecord() {
       const serial = manualInput.value.trim().toUpperCase();
       const note = noteInput.value.trim();
-
       if (!serial) {
         setStatus('Kaydetmek için seri numarası gerekli.');
         return;
       }
-
-      records.unshift({
-        serial,
-        note,
-        date: new Date().toLocaleString('tr-TR')
-      });
-
+      records.unshift({ serial, note, date: new Date().toLocaleString('tr-TR') });
       saveRecords();
       renderTable();
-      setStatus('Kayıt eklendi.');
       noteInput.value = '';
+      setStatus('Kayıt eklendi.');
     }
 
     function deleteRecord(index) {
@@ -422,16 +384,8 @@
         setStatus('Dışa aktaracak kayıt yok.');
         return;
       }
-
-      const rows = [
-        ['Seri No', 'Not', 'Tarih'],
-        ...records.map(r => [r.serial, r.note || '', r.date])
-      ];
-
-      const csv = rows.map(row =>
-        row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')
-      ).join('\n');
-
+      const rows = [['Seri No', 'Not', 'Tarih'], ...records.map(r => [r.serial, r.note || '', r.date])];
+      const csv = rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -452,15 +406,16 @@
     }
 
     window.deleteRecord = deleteRecord;
-
     document.getElementById('startBtn').addEventListener('click', startCamera);
     document.getElementById('stopBtn').addEventListener('click', stopCamera);
-    document.getElementById('captureBtn').addEventListener('click', captureFrame);
+    document.getElementById('captureBtn').addEventListener('click', captureScanArea);
     document.getElementById('scanBtn').addEventListener('click', scanSerial);
     document.getElementById('saveBtn').addEventListener('click', addRecord);
     document.getElementById('clearBtn').addEventListener('click', clearRecords);
     document.getElementById('exportBtn').addEventListener('click', exportCSV);
-
+    boxWidth.addEventListener('input', updateScanBox);
+    boxHeight.addEventListener('input', updateScanBox);
+    updateScanBox();
     renderTable();
   </script>
 </body>
