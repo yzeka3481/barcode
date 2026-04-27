@@ -46,8 +46,8 @@
       </div>
 
       <div class="result-box">
-        <div class="result-label">Son Tespit Edilen</div>
-        <div class="result-value" id="resultBox">Tarama bekleniyor...</div>
+        <div class="result-label">Okunan Metin (Düzenlenebilir)</div>
+        <input type="text" class="result-value" id="resultBox" value="Tarama bekleniyor..." style="width: 100%; background: transparent; border: none; outline: none; padding: 0;">
       </div>
 
       <div class="input-group" style="margin-top: 24px;">
@@ -55,7 +55,7 @@
         <input id="referenceInput" class="input-field" value="Service Tag:" placeholder="Örn: Service Tag:" />
       </div>
 
-      <div class="input-group">
+      <div class="input-group hidden">
         <label for="manualInput">Bulunan Seri No</label>
         <input id="manualInput" class="input-field" placeholder="Otomatik dolacak..." />
       </div>
@@ -175,7 +175,7 @@
 
     function setStatus(msg) { statusBox.textContent = msg; }
     function setResult(msg) { 
-      resultBox.textContent = msg; 
+      resultBox.value = msg; 
       if (msg !== 'Tarama bekleniyor...') {
         resultBox.style.color = 'var(--primary)';
       }
@@ -297,7 +297,7 @@
     }
 
     async function runLiveRead() {
-      if (ocrBusy) return;
+      if (ocrBusy || document.activeElement === resultBox) return;
 
       const referenceText = normalizeText(referenceInput.value);
       if (!referenceText) {
@@ -431,8 +431,8 @@
     }
 
     function addRecord(customSerial = null) {
-      const serial = (customSerial || manualInput.value).trim().toUpperCase();
-      if (!serial) {
+      const serial = (customSerial || resultBox.value).trim().toUpperCase();
+      if (!serial || serial === 'TARAMA BEKLENIYOR...') {
         if (!customSerial) setStatus('Kaydedilecek veri bulunamadı.');
         return;
       }
