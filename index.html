@@ -3,276 +3,131 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Barcode Okuyucu</title>
+  <title>Service Tag Okuyucu | Premium</title>
+  
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-  <style>
-    :root{
-      --bg:#f4f7fb; --card:#ffffff; --text:#1f2937; --muted:#6b7280; --line:#dbe3ee;
-      --accent:#0f766e; --accent-soft:#e6f4f1; --danger:#dc2626; --danger-soft:#fee2e2;
-      --ok:#166534; --ok-soft:#f0fdf4; --warn:#92400e; --warn-soft:#fff7ed;
-    }
-    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-    body{
-      margin:0;
-      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
-      background:var(--bg);
-      color:var(--text);
-    }
-    .wrap{
-      max-width:680px;
-      margin:0 auto;
-      padding:10px;
-    }
-    .card{
-      background:var(--card);
-      border:1px solid var(--line);
-      border-radius:16px;
-      padding:12px;
-      box-shadow:0 8px 18px rgba(15,23,42,.05);
-      margin-bottom:10px;
-    }
-    .title{
-      font-size:20px;
-      font-weight:700;
-      margin:0 0 6px;
-    }
-    .sub{
-      font-size:13px;
-      color:var(--muted);
-      line-height:1.35;
-      margin-bottom:10px;
-    }
-    .camera-shell{
-      position:relative;
-      width:100%;
-      overflow:hidden;
-      border-radius:14px;
-      background:#111827;
-      aspect-ratio:3/4;
-    }
-    video, canvas, img{
-      width:100%;
-      display:block;
-      background:#111827;
-    }
-    .camera-shell video{
-      position:absolute;
-      inset:0;
-      width:100%;
-      height:100%;
-      object-fit:cover;
-    }
-    .overlay{
-      position:absolute;
-      inset:0;
-      pointer-events:none;
-    }
-    .guide-box{
-      position:absolute;
-      left:8%;
-      top:14%;
-      width:84%;
-      height:72%;
-      border:3px solid rgba(34,197,94,.95);
-      border-radius:12px;
-      box-shadow:0 0 0 9999px rgba(0,0,0,.38);
-    }
-    .guide-label{
-      position:absolute;
-      left:50%;
-      top:calc(14% - 10px);
-      transform:translate(-50%, -100%);
-      background:rgba(34,197,94,.92);
-      color:#fff;
-      padding:5px 10px;
-      border-radius:999px;
-      font-size:11px;
-      font-weight:700;
-      white-space:nowrap;
-    }
-    .match-box{
-      position:absolute;
-      display:none;
-      border:3px solid rgba(245,158,11,.98);
-      background:rgba(245,158,11,.12);
-      border-radius:10px;
-    }
-    .row{
-      display:grid;
-      grid-template-columns:1fr auto;
-      gap:8px;
-      align-items:end;
-      margin-top:10px;
-    }
-    label{
-      display:block;
-      font-size:13px;
-      color:#374151;
-      margin-top:10px;
-      font-weight:700;
-    }
-    input{
-      width:100%;
-      border:1px solid var(--line);
-      border-radius:12px;
-      padding:12px;
-      font-size:16px;
-      margin-top:6px;
-      background:#fff;
-    }
-    .controls{
-      display:grid;
-      grid-template-columns:1fr 1fr;
-      gap:8px;
-      margin-top:10px;
-    }
-    button{
-      border:none;
-      border-radius:12px;
-      padding:13px 12px;
-      font-size:15px;
-      font-weight:700;
-      cursor:pointer;
-    }
-    .primary{background:var(--accent);color:#fff}
-    .secondary{background:var(--accent-soft);color:var(--accent)}
-    .danger{background:var(--danger-soft);color:var(--danger)}
-    .status{
-      margin-top:10px;
-      padding:10px 12px;
-      border-radius:12px;
-      background:#f8fafc;
-      border:1px solid var(--line);
-      color:#334155;
-      min-height:42px;
-      line-height:1.35;
-      font-size:14px;
-    }
-    .result{
-      font-size:20px;
-      font-weight:800;
-      margin-top:10px;
-      padding:12px;
-      border-radius:12px;
-      background:var(--ok-soft);
-      border:1px solid #bbf7d0;
-      color:var(--ok);
-      word-break:break-word;
-    }
-    .badge{
-      display:inline-flex;
-      align-items:center;
-      padding:6px 10px;
-      border-radius:999px;
-      font-size:12px;
-      font-weight:800;
-      background:#ecfdf5;
-      color:#166534;
-      margin-top:10px;
-    }
-    .small{
-      font-size:12px;
-      color:var(--muted);
-      line-height:1.35;
-      margin-top:6px;
-    }
-    table{
-      width:100%;
-      border-collapse:collapse;
-      margin-top:8px;
-      font-size:14px;
-    }
-    th, td{
-      border-bottom:1px solid var(--line);
-      padding:10px 6px;
-      text-align:left;
-      vertical-align:top;
-    }
-    th{background:#f8fafc}
-    .mini-btn{
-      border:none;
-      border-radius:10px;
-      padding:8px 10px;
-      font-size:13px;
-      font-weight:700;
-      background:var(--danger-soft);
-      color:var(--danger);
-    }
-    .debug{
-      margin-top:8px;
-      font-size:11px;
-      color:#64748b;
-      line-height:1.3;
-      word-break:break-word;
-    }
-    .hidden-canvas{display:none}
-  </style>
+  <link rel="stylesheet" href="index.css">
 </head>
 <body>
-  <div class="wrap">
-    <div class="card">
-      <div class="title">Service Tag Okuyucu</div>
-      <div class="sub">
-        Kamera açılışta çalışır. Referans metni bulununca yanındaki değeri seri no olarak almaya çalışır.
+  <div class="app-container">
+    <header class="header">
+      <h1>Service Tag Okuyucu</h1>
+      <p>Yapay zeka destekli seri numara tarayıcı</p>
+    </header>
+
+    <main class="glass-card">
+      <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+        <div class="status-pill" id="autoState">
+          <i data-lucide="scan-line" style="width: 14px; margin-right: 6px;"></i>
+          Tarama aktif
+        </div>
+        <label class="toggle-container" style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--primary); cursor: pointer;">
+          <input type="checkbox" id="autoSaveToggle" checked style="width: 16px; height: 16px; accent-color: var(--primary);">
+          Otomatik Kaydet
+        </label>
       </div>
 
-      <div class="camera-shell" id="cameraShell">
+      <div class="scanner-container" id="cameraShell">
         <video id="video" autoplay playsinline muted></video>
-        <div class="overlay">
-          <div class="guide-box"></div>
-          <div class="guide-label">Etiketi bu alana getir</div>
-          <div class="match-box" id="matchBox"></div>
+        <div class="scanner-overlay">
+          <div class="scan-region">
+            <div class="scan-line"></div>
+          </div>
+          <div id="matchBox" style="position: absolute; border: 2px solid var(--warning); display: none; pointer-events: none;"></div>
         </div>
       </div>
 
-      <canvas id="frameCanvas" class="hidden-canvas"></canvas>
-      <canvas id="cropCanvas" class="hidden-canvas"></canvas>
-
-      <div class="badge" id="autoState">Otomatik okuma açık</div>
-
-      <label for="referenceInput">Referans metni</label>
-      <input id="referenceInput" value="Service Tag:" placeholder="Örn: Service Tag:" />
-
-      <label for="manualInput">Bulunan seri no</label>
-      <input id="manualInput" placeholder="Otomatik dolacak" />
-
-      <div class="controls">
-        <button class="primary" id="saveBtn">Listeye Ekle</button>
-        <button class="secondary" id="exportBtn">XLS Dışa Aktar</button>
+      <div class="result-box">
+        <div class="result-label">Son Tespit Edilen</div>
+        <div class="result-value" id="resultBox">Tarama bekleniyor...</div>
       </div>
 
-      <div class="controls">
-        <button class="danger" id="clearBtn">Tümünü Sil</button>
-        <button class="secondary" id="restartBtn">Kamerayı Yenile</button>
+      <div class="input-group" style="margin-top: 24px;">
+        <label for="referenceInput">Referans Metni</label>
+        <input id="referenceInput" class="input-field" value="Service Tag:" placeholder="Örn: Service Tag:" />
       </div>
 
-      <div class="result" id="resultBox">Henüz okunmadı.</div>
-      <div class="status" id="statusBox">Kamera hazırlanıyor...</div>
-      <div class="small">Tek sütunlu çıktı üretir: yalnızca seri no.</div>
-      <div class="debug" id="debugBox"></div>
-
-      <div style="margin-top:10px">
-        <label>Son bulunan alan</label>
-        <img id="preview" alt="Bulunan alan önizleme" />
+      <div class="input-group">
+        <label for="manualInput">Bulunan Seri No</label>
+        <input id="manualInput" class="input-field" placeholder="Otomatik dolacak..." />
       </div>
-    </div>
 
-    <div class="card">
-      <div class="title" style="font-size:18px">Kayıtlar</div>
-      <table id="recordsTable">
-        <thead>
-          <tr>
-            <th style="width:40px">#</th>
-            <th>Seri No</th>
-            <th style="width:72px">İşlem</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
+      <div class="button-grid">
+        <button class="btn btn-primary" id="saveBtn">
+          <i data-lucide="plus-circle" style="width: 18px;"></i>
+          Listeye Ekle
+        </button>
+        <button class="btn btn-secondary" id="exportBtn">
+          <i data-lucide="download" style="width: 18px;"></i>
+          XLS Aktar
+        </button>
+      </div>
+
+      <div class="button-grid" style="margin-top: 12px;">
+        <button class="btn btn-danger" id="clearBtn">
+          <i data-lucide="trash-2" style="width: 18px;"></i>
+          Temizle
+        </button>
+        <button class="btn btn-secondary" id="restartBtn">
+          <i data-lucide="refresh-cw" style="width: 18px;"></i>
+          Yenile
+        </button>
+      </div>
+
+      <div id="statusBox" style="font-size: 13px; color: var(--text-muted); margin-top: 16px; text-align: center;">
+        Kamera hazırlanıyor...
+      </div>
+      
+      <div id="debugBox" class="hidden"></div>
+      
+      <canvas id="frameCanvas" class="hidden"></canvas>
+      <canvas id="cropCanvas" class="hidden"></canvas>
+      
+      <div style="margin-top: 20px; border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border);">
+        <img id="preview" alt="Önizleme" style="width: 100%; display: block; filter: grayscale(1) contrast(1.2);" />
+      </div>
+    </main>
+
+    <section class="glass-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div style="display: flex; flex-direction: column;">
+          <h2 style="margin: 0; font-size: 20px; font-weight: 700;">Kayıtlar</h2>
+          <span id="recordCount" style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">0 Kayıt</span>
+        </div>
+        <button class="btn btn-secondary" id="copyAllBtn" style="padding: 8px 16px; font-size: 13px;">
+          <i data-lucide="copy" style="width: 14px; margin-right: 6px;"></i>
+          Tümünü Kopyala
+        </button>
+      </div>
+      
+      <div style="overflow-x: auto;">
+        <table class="records-table" id="recordsTable">
+          <thead>
+            <tr>
+              <th style="width: 50px;">#</th>
+              <th>Seri Numarası</th>
+              <th style="width: 60px; text-align: right;">İşlem</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Dinamik dolacak -->
+          </tbody>
+        </table>
+      </div>
+    </section>
   </div>
 
   <script>
+    // Lucide ikonlarını yükle
+    lucide.createIcons();
+
     const video = document.getElementById('video');
     const frameCanvas = document.getElementById('frameCanvas');
     const cropCanvas = document.getElementById('cropCanvas');
@@ -285,17 +140,45 @@
     const recordsTableBody = document.querySelector('#recordsTable tbody');
     const cameraShell = document.getElementById('cameraShell');
     const matchBox = document.getElementById('matchBox');
+    const autoSaveToggle = document.getElementById('autoSaveToggle');
+    const recordCountEl = document.getElementById('recordCount');
+
+    let audioCtx = null;
+    function playBeep() {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.1);
+      } catch(e) {}
+    }
+
+    function triggerHaptic() {
+      if (navigator.vibrate) navigator.vibrate(50);
+    }
 
     let stream = null;
     let autoTimer = null;
     let ocrBusy = false;
     let lastAcceptedSerial = '';
     let lastAcceptedAt = 0;
-    let records = JSON.parse(localStorage.getItem('serial_records_mobile_v1') || '[]');
+    let records = JSON.parse(localStorage.getItem('serial_records_premium_v1') || '[]');
 
-    function setStatus(msg){ statusBox.textContent = msg; }
-    function setResult(msg){ resultBox.textContent = msg; }
-    function setDebug(msg){ debugBox.textContent = msg || ''; }
+    function setStatus(msg) { statusBox.textContent = msg; }
+    function setResult(msg) { 
+      resultBox.textContent = msg; 
+      if (msg !== 'Tarama bekleniyor...') {
+        resultBox.style.color = 'var(--primary)';
+      }
+    }
 
     function normalizeText(s) {
       return String(s || '')
@@ -322,7 +205,7 @@
           stream.getTracks().forEach(t => t.stop());
           stream = null;
         }
-        setStatus('Kamera açılıyor...');
+        setStatus('Kamera hazırlanıyor...');
         stream = await navigator.mediaDevices.getUserMedia({
           video: {
             facingMode: { ideal: 'environment' },
@@ -332,10 +215,10 @@
           audio: false
         });
         video.srcObject = stream;
-        setStatus('Kamera açık. Etiketi çerçeve içine getir.');
+        setStatus('Tarama için hazır.');
         startAutoReading();
       } catch (err) {
-        setStatus('Kamera açılamadı: ' + err.message);
+        setStatus('Kamera hatası: ' + err.message);
       }
     }
 
@@ -392,17 +275,24 @@
 
       if (!refMatch) return { serial: '', reason: 'Referans bulunamadı.' };
 
+      // Referansın hemen sonrasındaki kısmı al
       const after = cleaned.slice(refMatch.index + refMatch[0].length).trim();
-      const nearby = after.slice(0, 48);
+      
+      // Daha geniş bir arama: Harf, rakam, tire ve boşlukları içeren ilk bloğu al (4-32 karakter)
+      // Bu sayede boşluklu veya daha uzun "cümleleri" yakalayabiliriz.
+      const multiWordRegex = /^[A-Z0-9\-\s]{3,32}/;
+      const m = after.match(multiWordRegex);
+      
+      if (m && m[0].trim().length >= 3) {
+        return { serial: m[0].trim(), reason: 'Bulundu.' };
+      }
+
+      // Alternatif: Eğer yukarıdaki yemezse, yakınlardaki herhangi bir seri no formatını ara
       const genericRegex = /[A-Z0-9\-]{4,}/;
-      const m = nearby.match(genericRegex);
-      if (m && m[0]) return { serial: m[0].replace(/\s+/g, ''), reason: 'Bulundu.' };
+      const anyMatch = after.slice(0, 48).match(genericRegex);
+      if (anyMatch && anyMatch[0]) return { serial: anyMatch[0], reason: 'Yakın alandan bulundu.' };
 
-      const nextChunk = cleaned.slice(refMatch.index, refMatch.index + refMatch[0].length + 80);
-      const all = nextChunk.match(/[A-Z0-9\-]{4,}/g);
-      if (all && all.length > 0) return { serial: all[all.length - 1].replace(/\s+/g, ''), reason: 'Yakın alandan bulundu.' };
-
-      return { serial: '', reason: 'Referans var ama seri no çıkmadı.' };
+      return { serial: '', reason: 'Seri no tespit edilemedi.' };
     }
 
     async function runLiveRead() {
@@ -410,7 +300,7 @@
 
       const referenceText = normalizeText(referenceInput.value);
       if (!referenceText) {
-        setStatus('Referans metni gerekli.');
+        setStatus('Referans metni eksik.');
         return;
       }
 
@@ -419,7 +309,7 @@
 
       ocrBusy = true;
       try {
-        setStatus('Etiket taranıyor...');
+        setStatus('Tarama yapılıyor...');
         const sourceDataUrl = source.toDataURL('image/jpeg', 0.8);
         const result = await Tesseract.recognize(sourceDataUrl, 'eng');
         const rawText = normalizeText(result?.data?.text || '');
@@ -482,18 +372,26 @@
           if (!repeated) {
             lastAcceptedSerial = parsed.serial;
             lastAcceptedAt = now;
-            setStatus('Seri no bulundu.');
+            setStatus('Seri no başarıyla okundu.');
+            
+            // Başarı geri bildirimi
+            resultBox.style.animation = 'pulse 0.5s ease-in-out';
+            setTimeout(() => resultBox.style.animation = '', 500);
+
+            // Otomatik Kaydet açıksa ve listede yoksa ekle
+            if (autoSaveToggle.checked && !records.includes(parsed.serial)) {
+              addRecord(parsed.serial);
+              playBeep();
+              triggerHaptic();
+            }
           } else {
-            setStatus('Aynı seri no tekrar görüldü.');
+            setStatus('Aynı seri no taranıyor...');
           }
         } else {
-          setResult('Uygun seri no bulunamadı.');
           setStatus(parsed.reason);
         }
-
-        setDebug(`Referans: ${referenceText} | OCR: ${rawText.slice(0, 150)}`);
       } catch (err) {
-        setStatus('OCR hatası: ' + err.message);
+        setStatus('Hata: ' + err.message);
       } finally {
         ocrBusy = false;
       }
@@ -502,7 +400,7 @@
     function startAutoReading() {
       if (autoTimer) clearInterval(autoTimer);
       runLiveRead();
-      autoTimer = setInterval(runLiveRead, 2200);
+      autoTimer = setInterval(runLiveRead, 2500);
     }
 
     function renderTable() {
@@ -511,31 +409,46 @@
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td>${index + 1}</td>
-          <td>${escapeHtml(serial)}</td>
-          <td><button class="mini-btn" onclick="deleteRecord(${index})">Sil</button></td>
+          <td style="font-weight: 600; color: var(--text-main);">${escapeHtml(serial)}</td>
+          <td style="text-align: right; display: flex; gap: 8px; justify-content: flex-end;">
+            <button class="mini-delete" onclick="copyRecord('${escapeHtml(serial)}')" title="Kopyala" style="color: var(--primary);">
+              <i data-lucide="copy" style="width: 16px;"></i>
+            </button>
+            <button class="mini-delete" onclick="deleteRecord(${index})" title="Sil">
+              <i data-lucide="trash-2" style="width: 16px;"></i>
+            </button>
+          </td>
         `;
         recordsTableBody.appendChild(tr);
       });
+      recordCountEl.textContent = `${records.length} Kayıt`;
+      lucide.createIcons();
     }
 
     function saveRecords() {
-      localStorage.setItem('serial_records_mobile_v1', JSON.stringify(records));
+      localStorage.setItem('serial_records_premium_v1', JSON.stringify(records));
     }
 
-    function addRecord() {
-      const serial = manualInput.value.trim().toUpperCase();
+    function addRecord(customSerial = null) {
+      const serial = (customSerial || manualInput.value).trim().toUpperCase();
       if (!serial) {
-        setStatus('Kaydedilecek seri no yok.');
+        if (!customSerial) setStatus('Kaydedilecek veri bulunamadı.');
         return;
       }
       if (records.includes(serial)) {
-        setStatus('Bu seri no zaten listede var.');
+        if (!customSerial) setStatus('Bu seri no zaten listede.');
         return;
       }
       records.unshift(serial);
       saveRecords();
       renderTable();
-      setStatus('Listeye eklendi.');
+      setStatus(customSerial ? 'Otomatik eklendi: ' + serial : 'Listeye eklendi.');
+    }
+
+    function copyRecord(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        setStatus('Kopyalandı: ' + text);
+      });
     }
 
     function deleteRecord(index) {
@@ -546,23 +459,22 @@
     }
 
     function clearRecords() {
-      if (!confirm('Tüm kayıtlar silinsin mi?')) return;
+      if (!confirm('Tüm kayıtları silmek istediğinize emin misiniz?')) return;
       records = [];
       saveRecords();
       renderTable();
-      setStatus('Tüm kayıtlar silindi.');
+      setStatus('Tüm veriler temizlendi.');
     }
 
     function exportXls() {
       if (!records.length) {
-        setStatus('Dışa aktaracak kayıt yok.');
+        setStatus('Aktarılacak veri yok.');
         return;
       }
 
-      const rows = [['Seri No'], ...records.map(s => [s])];
       const tableHtml = `
-        <table>
-          <tr><th>Seri No</th></tr>
+        <table border="1">
+          <tr><th style="background-color: #10b981; color: white;">Seri Numarası</th></tr>
           ${records.map(s => `<tr><td>${escapeHtml(s)}</td></tr>`).join('')}
         </table>
       `;
@@ -580,7 +492,18 @@
       a.download = 'seri-numaralari.xls';
       a.click();
       URL.revokeObjectURL(url);
-      setStatus('XLS indirildi.');
+      setStatus('Excel dosyası indirildi.');
+    }
+
+    function copyAll() {
+      if (!records.length) {
+        setStatus('Kopyalanacak kayıt yok.');
+        return;
+      }
+      const text = records.join('\n');
+      navigator.clipboard.writeText(text).then(() => {
+        setStatus('Tüm kayıtlar kopyalandı.');
+      });
     }
 
     function escapeHtml(text) {
@@ -594,13 +517,26 @@
 
     window.deleteRecord = deleteRecord;
 
-    document.getElementById('saveBtn').addEventListener('click', addRecord);
+    document.getElementById('saveBtn').addEventListener('click', () => addRecord());
     document.getElementById('exportBtn').addEventListener('click', exportXls);
     document.getElementById('clearBtn').addEventListener('click', clearRecords);
     document.getElementById('restartBtn').addEventListener('click', startCamera);
+    document.getElementById('copyAllBtn').addEventListener('click', copyAll);
 
+    // Initial render
     renderTable();
     setTimeout(startCamera, 300);
+
+    // Pulse animation keyframes injected via JS
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); color: #fff; }
+        100% { transform: scale(1); }
+      }
+    `;
+    document.head.appendChild(style);
   </script>
 </body>
 </html>
