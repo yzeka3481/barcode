@@ -1,0 +1,21 @@
+{
+  "name": "Code Scanner",
+  "short_name": "CodeScan",
+  "description": "Premium AI-powered code and serial number scanner",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#0a0c10",
+  "theme_color": "#10b981",
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
