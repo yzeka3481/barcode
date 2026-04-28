@@ -277,30 +277,33 @@
     }
 
     function extractSerialNearReference(text, referenceText) {
-      const cleaned = normalizeText(text);
+      const lines = text.split('\n');
       const refRegex = buildLooseReferenceRegex(referenceText);
-      const refMatch = cleaned.match(refRegex);
 
-      if (!refMatch) return { serial: '', reason: 'Referans bulunamadı.' };
+      for (const line of lines) {
+        const cleanedLine = normalizeText(line);
+        const refMatch = cleanedLine.match(refRegex);
 
-      // Referansın hemen sonrasındaki kısmı al
-      const after = cleaned.slice(refMatch.index + refMatch[0].length).trim();
-      
-      // Daha geniş bir arama: Harf, rakam, tire ve boşlukları içeren ilk bloğu al (4-32 karakter)
-      // Bu sayede boşluklu veya daha uzun "cümleleri" yakalayabiliriz.
-      const multiWordRegex = /^[A-Z0-9\-\s]{3,32}/;
-      const m = after.match(multiWordRegex);
-      
-      if (m && m[0].trim().length >= 3) {
-        return { serial: m[0].trim(), reason: 'Bulundu.' };
+        if (refMatch) {
+          // Referansın hemen sonrasındaki kısmı al (sadece aynı satırda)
+          const after = cleanedLine.slice(refMatch.index + refMatch[0].length).trim();
+          
+          // Daha geniş bir arama: Harf, rakam, tire ve boşlukları içeren ilk bloğu al (3-32 karakter)
+          const multiWordRegex = /^[A-Z0-9\-\s]{3,32}/;
+          const m = after.match(multiWordRegex);
+          
+          if (m && m[0].trim().length >= 3) {
+            return { serial: m[0].trim(), reason: 'Bulundu.' };
+          }
+
+          // Alternatif: Eğer yukarıdaki yemezse, aynı satırdaki herhangi bir seri no formatını ara
+          const genericRegex = /[A-Z0-9\-]{4,}/;
+          const anyMatch = after.slice(0, 48).match(genericRegex);
+          if (anyMatch && anyMatch[0]) return { serial: anyMatch[0], reason: 'Aynı satırda bulundu.' };
+        }
       }
 
-      // Alternatif: Eğer yukarıdaki yemezse, yakınlardaki herhangi bir seri no formatını ara
-      const genericRegex = /[A-Z0-9\-]{4,}/;
-      const anyMatch = after.slice(0, 48).match(genericRegex);
-      if (anyMatch && anyMatch[0]) return { serial: anyMatch[0], reason: 'Yakın alandan bulundu.' };
-
-      return { serial: '', reason: 'Seri no tespit edilemedi.' };
+      return { serial: '', reason: 'Seri no aynı satırda tespit edilemedi.' };
     }
 
     async function runLiveRead() {
@@ -320,7 +323,7 @@
         setStatus('Tarama yapılıyor...');
         const sourceDataUrl = source.toDataURL('image/jpeg', 0.8);
         const result = await Tesseract.recognize(sourceDataUrl, 'eng');
-        const rawText = normalizeText(result?.data?.text || '');
+        const rawText = result?.data?.text || '';
         const words = result?.data?.words || [];
         const refRegex = buildLooseReferenceRegex(referenceText);
         const parsed = extractSerialNearReference(rawText, referenceText);
